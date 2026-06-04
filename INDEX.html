@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>波段突破自動監控系統 (未來波段趨勢版) V6</title>
+    
+    <style>
+        :root { --base-font-size: 14px; --chart-height: 190px; }
+        body { font-family: 'Microsoft JhengHei', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: #f4f6f9; color: #2c3e50; margin: 0; padding: 8px; font-size: var(--base-font-size); transition: font-size 0.2s; -webkit-text-size-adjust: 100%; }
+        .container { background-color: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); box-sizing: border-box; width: 100%; max-width: 600px; margin: 0 auto; }
+        h2 { text-align: center; color: #1a252f; margin-top: 0; margin-bottom: 12px; font-size: 1.25em; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px; }
+        
+        .toolbar { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; background: #fdfdfd; padding: 8px; border-radius: 8px; border: 1px solid #eaeaea; }
+        .tool-group { display: flex; align-items: center; gap: 4px; }
+        .tool-group span { font-weight: bold; color: #7f8c8d; font-size: 0.85em; }
+        .btn-ctrl { padding: 6px 10px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; font-weight: bold; color: #334155; font-size: 0.9em; }
+        
+        .watchlist-group { display: flex; flex-direction: column; margin-bottom: 12px; gap: 8px; background-color: #f0fdf4; padding: 12px; border-radius: 10px; border: 1px solid #bbf7d0; }
+        .watchlist-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: 'Microsoft JhengHei'; font-size: 1em; background-color: #fff; box-sizing: border-box; }
+        .notes-area { width: 100%; }
+        .notes-area label { display: block; font-weight: bold; color: #166534; margin-bottom: 4px; font-size: 0.9em; }
+        .notes-area textarea { width: 100%; height: 75px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; font-family: 'Microsoft JhengHei'; font-size: 0.95em; resize: none; background-color: #fbfdfb; box-sizing: border-box; }
+        .btn-action-row { width: 100%; display: flex; gap: 8px; }
+        .btn-small { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; font-family: 'Microsoft JhengHei'; font-size: 0.95em; text-align: center; }
+        .btn-add { background-color: #ea580c; } 
+        .btn-remove { background-color: #64748b; } 
+        
+        .input-group { display: flex; align-items: center; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 8px; box-sizing: border-box; }
+        .input-group label { width: 95px; font-weight: bold; color: #334155; font-size: 0.95em; flex-shrink: 0; }
+        .input-group input { flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 1.05em; width: 100%; box-sizing: border-box; background: #fff; }
+        .btn { display: block; width: 100%; padding: 12px; color: white; border: none; border-radius: 8px; font-size: 1.05em; cursor: pointer; margin-top: 4px; font-weight: bold; box-sizing: border-box; }
+        .btn-fetch { background-color: #16a34a; box-shadow: 0 2px 4px rgba(22,163,74,0.2); } 
+        
+        .company-header { text-align: center; margin: 10px 0; padding: 10px; background-color: #fafafa; border: 1px dashed #cbd5e1; border-radius: 6px; }
+        .company-header span.label { font-size: 0.95em; color: #64748b; }
+        .company-header span.name { font-size: 1.35em; font-weight: bold; color: #dc2626; margin-left: 6px; }
+        
+        .info-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
+        .auto-info-box { background-color: #fffbfa; border: 1px solid #fed7aa; padding: 10px; border-radius: 6px; border-left: 4px solid #f97316;}
+        .ai-info-box { background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 10px; border-radius: 6px; border-left: 4px solid #a855f7;}
+        .predict-info-box { background-color: #f0f9ff; border: 1px solid #bae6fd; padding: 10px; border-radius: 6px; border-left: 4px solid #0284c7;}
+        /* 新增：未來趨勢盒子的綠色系樣式 */
+        .trend-info-box { background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; border-left: 4px solid #16a34a;}
+        .novice-info-box { background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 6px; border-left: 4px solid #f97316;}
+        
+        .thermo-bg { width: 100%; background: #e2e8f0; border-radius: 10px; height: 16px; margin: 8px 0; overflow: hidden; position: relative; }
+        .thermo-bar { height: 100%; width: 50%; background: linear-gradient(to right, #22c55e, #eab308, #ef4444); transition: width 0.5s; }
+        .tip-tag { background: #e0f2fe; color: #0369a1; font-size: 0.8em; padding: 2px 6px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 4px; display: inline-block; }
+        
+        .auto-info-title { font-weight: bold; margin-bottom: 6px; font-size: 0.95em; border-bottom: 1px dashed rgba(0,0,0,0.08); padding-bottom: 4px;}
+        .color-orange { color: #ea580c; } .color-purple { color: #7e22ce; } .color-blue { color: #0369a1; } .color-green { color: #15803d; }
+        .moat-text { font-size: 0.9em; color: #334155; margin-top: 6px; line-height: 1.45; white-space: pre-wrap; }
+        .themes-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;}
+        .theme-badge { background: #3b82f6; color: #fff; padding: 3px 6px; border-radius: 8px; font-size: 0.8em; font-weight: bold; }
+        
+        .chart-container { margin-top: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 8px; text-align: center; overflow: hidden; }
+        canvas { max-width: 100%; height: var(--chart-height); width: 100%; }
+        
+        .grid-layout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
+        .grid-layout .input-group { margin-bottom: 0; padding: 6px 8px; }
+        .grid-layout .input-group label { width: 75px; font-size: 0.85em; }
+        .grid-layout .input-group input { padding: 4px; font-size: 0.95em; background: #f8fafc; }
+        
+        .result-box { margin-top: 10px; padding: 12px; background-color: #f8fafc; border-left: 5px solid #cbd5e1; border-radius: 6px; font-size: 0.95em; line-height: 1.5; }
+        .result-title { font-size: 1.1em; font-weight: bold; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #f1f5f9; }
+        ul.analysis-list { margin: 0; padding-left: 16px; color: #334155; }
+        ul.analysis-list li { margin-bottom: 4px; }
+        .badge { padding: 2px 4px; border-radius: 4px; font-size: 0.8em; color: white; margin-right: 4px; font-weight: bold; }
+        .bg-red { background-color: #ef4444; } .bg-green { background-color: #22c55e; } .bg-gray { background-color: #64748b; }
+    </style>
+
+    <script type="text/javascript">
+        var GOOGLE_PROXY_URL = "https://script.google.com/macros/s/AKfycby00Dd0d7v39qBwmqr6wxPHsUiRp69B6v-AoBTj9XTbqytQZBU7MlZYlNdU30pw7F3G/exec"; 
+        
+        var myWatchlist = [];
+        var globalValidData = [];
+        var currentFontSize = 14;
+        var currentChartHeight = 190;
+        
+        var baseMoatDatabase = {
+            "2330": "【絕對技術壟斷】\n全球先進製程晶圓代工絕對霸主。資本支出壁壘與極高良率無人能及，幾乎壟斷全球高階 AI 晶片製造，具備市場絕對定價權。",
+            "2317": "【全球 EMS 龍頭與 AI 巨頭】\n具備全球最強大規模量產與供應鏈整合能力。通吃 NVIDIA 最新架構伺服器關鍵主機板與整機櫃訂單，份額穩固。",
+            "2382": "【一線雲端 CSP 核心夥伴】\n廣達電腦。與 Google、Microsoft 等北美大廠結盟深厚，高階 AI 伺服器整櫃出貨與調校經驗傲視全球，獲利能力高於同業。",
+            "3231": "【AI 伺服器基板霸主】\n緯創資通。率先卡位 NVIDIA GPU 基板 主要供應份額，毛利率受惠於 AI 高毛利產品比重拉高而大幅結構性轉型。"
+        };
+
+        window.onload = function() { initWatchlist(); applySettings(); };
+
+        function showTip(type) {
+            var msgs = {
+                'bias': "💡 什麼是乖離率？\n代表今天股價離這一個月的平均成本（月線）有多遠。\n正太多（如 > 10%）代表大家都賺很多了，隨時有人想賣，新手不要亂追高！\n負太多（如 < -10%）代表跌得很誇張，可能有人斷頭拋售。",
+                'position': "💡 什麼是近3個月位階？\n把過去三個月的最高價設為100%、最低價設為0%。\n如果超過75%代表現在是相對高點；低於25%代表是相對低點。",
+                'vol': "💡 什麼是成交量比？\n今天預估的成交量除以過去5天的平均量。\n大於1.5倍代表今天這檔股票很熱門、有人在買賣。如果小於1倍代表今天大家對它沒興趣。"
+            };
+            alert(msgs[type]);
+        }
+
+        function changeFontSize(step) {
+            currentFontSize += step;
+            if(currentFontSize < 12) currentFontSize = 12;
+            if(currentFontSize > 22) currentFontSize = 22;
+            document.documentElement.style.setProperty('--base-font-size', currentFontSize + 'px');
+        }
+
+        function changeChartSize(step) {
+            currentChartHeight += step;
+            if(currentChartHeight < 120) currentChartHeight = 120;
+            if(currentChartHeight > 400) currentChartHeight = 400;
+            document.documentElement.style.setProperty('--chart-height', currentChartHeight + 'px');
+            if(globalValidData.length > 0) drawChart();
+        }
+
+        function applySettings() {
+            document.documentElement.style.setProperty('--base-font-size', currentFontSize + 'px');
+            document.documentElement.style.setProperty('--chart-height', currentChartHeight + 'px');
+        }
+
+        function initWatchlist() {
+            try {
+                var storedData = localStorage.getItem("twDirectStockMonitorV11");
+                if (storedData) { myWatchlist = JSON.parse(storedData); } 
+                else {
+                    myWatchlist = [
+                        { symbol: "2330", name: "台積電", userNotes: "" },
+                        { symbol: "2317", name: "鴻海", userNotes: "" }
+                    ];
+                }
+            } catch(e) { myWatchlist = []; }
+            renderWatchlist();
+        }
+
+        function renderWatchlist() {
+            var sel = document.getElementById("selWatchlist");
+            sel.options.length = 1;
+            for (var i = 0; i < myWatchlist.length; i++) {
+                var opt = document.createElement("option");
+                opt.value = myWatchlist[i].symbol;
+                opt.text = myWatchlist[i].symbol + " (" + myWatchlist[i].name + ")";
+                sel.appendChild(opt);
+            }
+        }
+
+        function loadFromWatchlist() {
+            var sel = document.getElementById("selWatchlist");
+            if (sel.value !== "") {
+                document.getElementById("txtSymbol").value = sel.value;
+                for(var i=0; i<myWatchlist.length; i++) {
+                    if(myWatchlist[i].symbol === sel.value) {
+                        document.getElementById("txtNotes").value = myWatchlist[i].userNotes || "";
+                        break;
+                    }
+                }
+                fetchData();
+            }
+        }
+
+        function addToWatchlist() {
+            var sym = document.getElementById("txtSymbol").value.replace(/^\s+|\s+$/g, '').toUpperCase().split('.')[0];
+            var notes = document.getElementById("txtNotes").value;
+            if (sym === "") { alert("請先輸入股票代號！"); return; }
+            var name = document.getElementById("lblCompanyName").innerText;
+            if (name.indexOf("解析") !== -1 || name === "等待抓取..." || name === "查無資料") name = "自選股";
+            
+            if(notes.trim() !== "") {
+                document.getElementById("autoMoatBox").innerHTML = notes.replace(/\n/g, "<br>");
+            }
+
+            for (var i = 0; i < myWatchlist.length; i++) {
+                if (myWatchlist[i].symbol === sym) {
+                    myWatchlist[i].name = name; 
+                    myWatchlist[i].userNotes = notes; 
+                    saveData(); renderWatchlist();
+                    document.getElementById("selWatchlist").value = sym;
+                    alert("✅ 已成功儲存該股自訂筆記！"); return;
+                }
+            }
+            myWatchlist.push({ symbol: sym, name: name, userNotes: notes });
+            saveData(); renderWatchlist();
+            document.getElementById("selWatchlist").value = sym;
+            alert("✅ 成功加入自選股庫！");
+        }
+
+        function removeFromWatchlist() {
+            var sym = document.getElementById("selWatchlist").value;
+            if (sym === "") return;
+            if (confirm("確定要刪除此代號與筆記嗎？")) {
+                myWatchlist = myWatchlist.filter(function(item){ return item.symbol !== sym; });
+                saveData(); renderWatchlist();
+                document.getElementById("txtNotes").value = "";
+                document.getElementById("autoMoatBox").innerHTML = "等待抓取...";
+            }
+        }
+
+        function saveData() {
+            try { localStorage.setItem("twDirectStockMonitorV11", JSON.stringify(myWatchlist)); } catch(e){}
+        }
+
+        function drawChart() {
+            var canvas = document.getElementById("priceChart");
+            var ctx = canvas.getContext("2d");
+            canvas.width = canvas.offsetWidth; canvas.height = currentChartHeight;
+            var w = canvas.width; var h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            if (globalValidData.length === 0) return;
+
+            var minP = globalValidData[0].close, maxP = globalValidData[0].close, maxV = globalValidData[0].vol;
+            for (var i = 1; i < globalValidData.length; i++) {
+                if (globalValidData[i].close < minP) minP = globalValidData[i].close;
+                if (globalValidData[i].close > maxP) maxP = globalValidData[i].close;
+                if (globalValidData[i].vol > maxV) maxV = globalValidData[i].vol;
+            }
+
+            var priceRange = maxP - minP; if (priceRange === 0) priceRange = 1;
+            var paddingY = 15; var chartH = h - 35; var volH = 30;       
+
+            ctx.fillStyle = "rgba(148, 163, 184, 0.35)";
+            var barW = Math.max((w / globalValidData.length) * 0.5, 1);
+            for (var i = 0; i < globalValidData.length; i++) {
+                var x = (i / (globalValidData.length - 1)) * w;
+                var currentVolH = (globalValidData[i].vol / maxV) * volH;
+                ctx.fillRect(x - barW/2, h - currentVolH, barW, currentVolH);
+            }
+
+            ctx.beginPath(); ctx.strokeStyle = "#0284c7"; ctx.lineWidth = 2;
+            for (var i = 0; i < globalValidData.length; i++) {
+                var x = (i / (globalValidData.length - 1)) * w;
+                var y = paddingY + (1 - (globalValidData[i].close - minP) / priceRange) * (chartH - paddingY * 2);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            var lastX = w;
+            var lastY = paddingY + (1 - (globalValidData[globalValidData.length-1].close - minP) / priceRange) * (chartH - paddingY * 2);
+            ctx.beginPath(); ctx.arc(lastX - 5, lastY, 4, 0, 2 * Math.PI); ctx.fillStyle = "#ef4444"; ctx.fill();
+        }
+
+        function generateAIReport(cPrice, cOpen, cHigh, cLow, estVol, avgVol, ma5, ma20, dataArray) {
+            var max3m = dataArray[0].high; var min3m = dataArray[0].low;
+            for(var i=0; i<dataArray.length; i++) {
+                if(dataArray[i].high > max3m) max3m = dataArray[i].high;
+                if(dataArray[i].low < min3m) min3m = dataArray[i].low;
+            }
+            var bias20 = ((cPrice - ma20) / ma20) * 100;
+            var positionRatio = (max3m === min3m) ? 50 : ((cPrice - min3m) / (max3m - min3m)) * 100;
+            var body = Math.abs(cPrice - cOpen);
+            var upperShadow = cHigh - Math.max(cPrice, cOpen);
+            var lowerShadow = Math.min(cPrice, cOpen) - cLow;
+
+            var report = "<div>";
+            report += "<strong>📊 位階與乖離率：</strong><span class='tip-tag' onclick='showTip(\"position\")'>位階?</span> <span class='tip-tag' onclick='showTip(\"bias\")'>乖離率?</span><br>股價處於近3個月相對位階的 " + positionRatio.toFixed(1) + "% (" + (positionRatio > 75 ? "高檔超買區" : (positionRatio < 25 ? "低檔超賣區" : "中軌震盪區")) + ")。與月線(20MA)相對乖離率為 " + bias20.toFixed(2) + "%。";
+            
+            report += "<br><br><strong>🕯️ 今日K線型態：</strong><br>";
+            if (upperShadow > body * 1.5 && upperShadow > cPrice * 0.008) report += "留下實體大於上影線之避雷針，上方高檔解套或獲利拋壓沈重。";
+            else if (lowerShadow > body * 1.5 && lowerShadow > cPrice * 0.008) report += "下影線極長，低檔買盤防守積極，探底後具備支撐力道。";
+            else if (cPrice > cOpen && body > cPrice * 0.015) report += "大實體紅K棒多方發動攻擊，多頭占盡優勢。";
+            else report += "多空震盪收窄，K線呈現十字星或短實體，等待市場放量表態。";
+            
+            report += "<br><br><strong>🤖 AI 策略防守研判：</strong><br>";
+            if (cPrice > ma20 && estVol >= avgVol * 1.7 && cPrice >= cOpen) report += "<span style='color:#b91c1c; font-weight:bold;'>【帶量強勢突破】</span>價量齊揚，屬於標準突破追擊訊號。多單以今日低點 " + cLow.toFixed(2) + " 元或5日線作波段防守點。";
+            else if (cPrice < ma20) report += "<span style='color:#64748b; font-weight:bold;'>【弱勢空頭格局】</span>受制於均線反壓之下。中線趨勢偏弱，空手者應多看少動，切勿進場盲目接刀。";
+            else report += "<span style='color:#0284c7; font-weight:bold;'>【量縮常態整理】</span>站穩月線之上，但缺乏波段攻擊量，預期將進行高姿態箱型整理，可區間低吸。";
+            report += "</div>"; return report;
+        }
+
+        function analyzeNextDayProbability(dataArray) {
+            if (dataArray.length < 25) return { upProb: 50, totalPatterns: 0, reason: "歷史資料天數不足以建立統計特徵模型。" };
+            var matchPatternCount = 0; var nextDayUpCount = 0;
+            var todayIdx = dataArray.length - 1; var today = dataArray[todayIdx];
+            var todayBody = today.close - today.open; var todayIsRed = todayBody >= 0; var todayVol = today.vol;
+            
+            var sumV = 0; for(var m=todayIdx; m>todayIdx-5; m--) sumV += dataArray[m].vol;
+            var todayAvgV = sumV / 5; var todayVolRatio = todayVol / todayAvgV;
+
+            for (var i = 20; i < dataArray.length - 1; i++) {
+                var htmlCur = dataArray[i]; var histPrevSumV = 0;
+                for(var n=i; n>i-5; n--) histPrevSumV += dataArray[n].vol;
+                var histAvgV = histPrevSumV / 5;
+                var histBody = htmlCur.close - htmlCur.open; var histIsRed = histBody >= 0; var histVolRatio = htmlCur.vol / histAvgV;
+                
+                if (histIsRed === todayIsRed && Math.abs(histVolRatio - todayVolRatio) < 0.35) {
+                    matchPatternCount++;
+                    var htmlNextDay = dataArray[i + 1];
+                    if (htmlNextDay.close > htmlCur.close) { nextDayUpCount++; }
+                }
+            }
+            
+            var sumClose5 = 0; for(var x=todayIdx; x>todayIdx-5; x--) sumClose5 += dataArray[x].close;
+            var sumClose20 = 0; for(var y=todayIdx; y>todayIdx-20; y--) sumClose20 += dataArray[y].close;
+            var ma5 = sumClose5 / 5; var ma20 = sumClose20 / 20;
+            
+            var trendWeight = 0;
+            if (today.close > ma5 && ma5 > ma20) trendWeight = 5;
+            if (today.close < ma5 && ma5 < ma20) trendWeight = -5;
+            
+            var finalProb = 50;
+            if (matchPatternCount > 0) {
+                finalProb = (nextDayUpCount / matchPatternCount) * 100;
+                finalProb = finalProb * 0.7 + (50 + trendWeight) * 0.3;
+            } else { finalProb = 50 + trendWeight; }
+            
+            if (finalProb > 85) finalProb = 85; if (finalProb < 15) finalProb = 15;
+            
+            var directionText = ""; var actionAdvice = "";
+            if (finalProb >= 55) {
+                directionText = "<span style='color:#ef4444; font-weight:bold;'>📈 偏多看漲</span> (預期上漲機率 " + finalProb.toFixed(1) + "%)";
+                actionAdvice = "依據量價標籤回測，歷史上出現相似 K 線與量比結構時，隔日延續多頭慣性較強。短線操作可考慮於尾盤適度偏多卡位。";
+            } else if (finalProb <= 45) {
+                directionText = "<span style='color:#22c55e; font-weight:bold;'>📉 偏空看跌</span> (預期下跌機率 " + (100 - finalProb).toFixed(1) + "%)";
+                actionAdvice = "量價型態顯示上方解套或逢高調節壓力顯著，歷史相似結構下隔日收黑機率較高。建議空手靜待回測，持股者不宜追高。";
+            } else {
+                directionText = "<span style='color:#64748b; font-weight:bold;'>⚖️ 區間多空拉鋸</span> (多空機率各半 " + finalProb.toFixed(1) + "%)";
+                actionAdvice = "當前型態特徵在歷史上無明顯方向性特徵，隔日走勢容易受大盤震盪影響，建議維持既有波段策略，不急於短線無方向性押注。";
+            }
+            
+            return { probHtml: directionText, advice: actionAdvice, totalPatterns: matchPatternCount, score: finalProb };
+        }
+
+        /* ================= 新增：未來波段中期趨勢演算法 ================= */
+        function analyzeMediumTrend(dataArray) {
+            var dataLen = dataArray.length;
+            var todayData = dataArray[dataLen - 1];
+            
+            // 計算短、中、長均線
+            var sum5 = 0, sum20 = 0, sum60 = 0;
+            for(var i=dataLen-1; i>=dataLen-5; i--) sum5 += dataArray[i].close;
+            for(var i=dataLen-1; i>=dataLen-20; i--) sum20 += dataArray[i].close;
+            var ma5 = sum5 / 5;
+            var ma20 = sum20 / 20;
+            
+            // 由於只有3個月數據(約60天)，計算40日均線作為長期基底
+            var checkDays = Math.min(40, dataLen);
+            for(var i=dataLen-1; i>=dataLen-checkDays; i--) sum60 += dataArray[i].close;
+            var ma40 = sum60 / checkDays;
+
+            var trendTitle = "";
+            var trendDesc = "";
+            var barColor = "#64748b";
+
+            // 均線斜率
+            var prevSum20 = 0;
+            for(var i=dataLen-2; i>=dataLen-21; i--) prevSum20 += dataArray[i].close;
+            var prevMa20 = prevSum20 / 20;
+            var ma20Slope = ma20 - prevMa20; // 月線斜率(向上或向下)
+
+            // 趨勢狀態邏輯矩陣
+            if (todayData.close > ma5 && ma5 > ma20 && ma20 > ma40 && ma20Slope > 0) {
+                trendTitle = "🚀 進入【波段多頭主升段】慣性";
+                trendDesc = "均線呈現標準多頭排列，且月線斜率強勢向上。未來 2-3 週中期大趨勢具備極強的驚人慣性，不容易輕易大跌，每次拉回皆為波段防守買點。";
+                barColor = "#ef4444";
+            } else if (todayData.close > ma20 && ma20Slope > 0 && ma5 <= ma20) {
+                trendTitle = "⚖️ 處於【多頭高檔震盪整理】";
+                trendDesc = "中期趨勢尚未被破壞，但短線動能（5日線）放緩。未來趨勢預期將拉長進行橫盤箱型洗盤，洗淨浮額後才有機會再度發動攻擊。";
+                barColor = "#eab308";
+            } else if (todayData.close > ma20 && ma20Slope <= 0) {
+                trendTitle = "⚠️ 處於【多空反轉臨界點】";
+                trendDesc = "股價雖在月線上方，但中期均線走平或下彎。未來一週為關鍵扣抵區，若無法放量大紅K拉開距離，大趨勢隨時有轉為中期修正的潛在風險。";
+                barColor = "#f97316";
+            } else if (todayData.close < ma20 && ma5 < ma20 && ma20Slope < 0) {
+                trendTitle = "❄️ 陷入【中期弱勢空頭修正】";
+                trendDesc = "大趨勢完全被均線死死反壓，且月線斜率加速下墜。未來數週趨勢將持續呈現底底低慣性，切勿盲目猜測低點進場攤平，應等待均線走平。";
+                barColor = "#22c55e";
+            } else {
+                trendTitle = "🔄 屬於【無方向性渾沌盤整】";
+                trendDesc = "短、中期均線互相糾纏，股價在均線上下反覆穿梭。未來大趨勢尚未明朗，市場正處於築底或高檔出貨的混沌期，建議縮小資金水位。";
+                barColor = "#64748b";
+            }
+
+            var html = "<strong>📈 未來中期波段趨勢：</strong><span style='color:" + barColor + "; font-weight:bold;'>" + trendTitle + "</span><br>";
+            html += "<p style='margin:6px 0 0 0; line-height:1.5; color:#475569; font-size:0.95em;'>" + trendDesc + "</p>";
+            document.getElementById("mediumTrendBox").innerHTML = html;
+        }
+        /* ========================================================= */
+
+        function generateNoviceDashboard(cPrice, ma20, volRatio, positionRatio) {
+            var score = 50;
+            if (cPrice > ma20) score += 15; else score -= 15;
+            if (volRatio > 1.5) score += 15;
+            if (positionRatio < 30) score += 10; 
+            if (positionRatio > 85) score -= 10; 
+            if (score > 100) score = 100; if (score < 0) score = 0;
+
+            var statusText = ""; var statusColor = "";
+            if(score >= 70) { statusText = "🔥 多頭非常強烈 (防追高風險)"; statusColor = "#ef4444"; }
+            else if(score >= 45) { statusText = "⚖️ 溫和箱型整理 (適合耐心低吸)"; statusColor = "#eab308"; }
+            else { statusText = "❄️ 空頭跌勢或冰凍期 (建議先觀望)"; statusColor = "#22c55e"; }
+
+            var chk1 = cPrice > ma20 ? "✅ 股價在安全線(月線)上方" : "❌ 股價被均線壓著打 (弱勢)";
+            var chk2 = volRatio >= 1.2 ? "✅ 有熱門成交量 (有人在照顧)" : "❌ 沒什麼人理它 (沒量常態盤整)";
+            var chk3 = positionRatio < 80 ? "✅ 價格還沒漲到最高極端區" : "❌ 已經漲到歷史高點極端區 (高風險)";
+
+            var html = "<div>";
+            html += "<strong>🚦 小白多空安全溫度計：</strong><span style='color:"+statusColor+";font-weight:bold;'>"+statusText+"</span>";
+            html += "<div class='thermo-bg'><div class='thermo-bar' style='width:"+score+"%; background:"+statusColor+";'></div></div>";
+            html += "<br><strong>🎯 傻瓜式防呆條件檢查表：</strong><br>";
+            html += "<span style='font-size:0.95em; line-height:1.6;'>";
+            html += chk1 + "<br>" + chk2 + "<br>" + chk3 + "</span>";
+            html += "</div>";
+            
+            document.getElementById("noviceDashboardBox").innerHTML = html;
+        }
+
+        function fetchData() {
+            var symbolInput = document.getElementById("txtSymbol").value.replace(/^\s+|\s+$/g, '').toUpperCase().split('.')[0];
+            if (symbolInput === "") { alert("請輸入股票代號！"); return; }
+            
+            document.getElementById("lblCompanyName").innerText = "資料解析中...";
+            document.getElementById("lblResult").innerHTML = "<div style='text-align:center;'><strong>透過專屬 GAS 隧道對接 Yahoo 中...</strong></div>";
+            document.getElementById("autoThemesBox").innerHTML = "抓取中...";
+            
+            var displayMoat = ""; var userHasNotes = false;
+            for(var i=0; i<myWatchlist.length; i++) {
+                if(myWatchlist[i].symbol === symbolInput && myWatchlist[i].userNotes.trim() !== "") {
+                    displayMoat = "【自訂操盤筆記】\n" + myWatchlist[i].userNotes; userHasNotes = true; break;
+                }
+            }
+            if (!userHasNotes) {
+                if (baseMoatDatabase[symbolInput]) { displayMoat = baseMoatDatabase[symbolInput]; } 
+                else { displayMoat = "【一般上市櫃標的】\n目前資料庫無內建核心護城河。可至上方綠色區塊自行輸入研究題材。"; }
+            }
+            document.getElementById("autoMoatBox").innerHTML = displayMoat.replace(/\n/g, "<br>");
+            document.getElementById("aiReportBox").innerHTML = "演算中...";
+            document.getElementById("nextDayPredictBox").innerHTML = "計算中...";
+            document.getElementById("mediumTrendBox").innerHTML = "計算中...";
+            document.getElementById("noviceDashboardBox").innerHTML = "分析中...";
+
+            var targetNameUrl = "https://tw.stock.yahoo.com/quote/" + symbolInput;
+            var nameProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(targetNameUrl);
+            
+            fetch(nameProxyUrl)
+            .then(res => res.text())
+            .then(html => {
+                var titleMatch = html.match(/<title>(.*?)\(/);
+                if (titleMatch && titleMatch[1]) {
+                    var fName = titleMatch[1].replace(/^\s+|\s+$/g, '');
+                    if(fName.indexOf("Yahoo") === -1) document.getElementById("lblCompanyName").innerText = fName;
+                }
+                var themes = []; var regex = /href="\/concept\/([^"]+)"/g; var match;
+                while ((match = regex.exec(html)) !== null) {
+                    var themeName = decodeURIComponent(match[1]).replace(/^\s+|\s+$/g, '');
+                    if (themeName !== "" && themeName.indexOf("?") === -1 && themes.indexOf(themeName) === -1) themes.push(themeName);
+                }
+                var themesHtml = "";
+                if (themes.length > 0) {
+                    for (var t = 0; t < themes.length; t++) themesHtml += "<span class='theme-badge'>#" + themes[t] + "</span>";
+                } else { themesHtml = "<span class='theme-badge'>#台股標的</span>"; }
+                document.getElementById("autoThemesBox").innerHTML = themesHtml;
+            }).catch(e => { document.getElementById("autoThemesBox").innerHTML = "<span class='theme-badge'>#台股標的</span>"; });
+
+            executeKLineFetch(symbolInput, ".TW");
+        }
+
+        function executeKLineFetch(symbol, suffix) {
+            var targetApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + suffix + "?range=3mo&interval=1d&region=TW&lang=zh-Hant-TW";
+            var klineProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(targetApiUrl);
+
+            fetch(klineProxyUrl)
+            .then(response => response.json())
+            .then(data => {
+                if(!data.chart || !data.chart.result || data.chart.result[0].indicators.quote[0].close == null) {
+                    if (suffix === ".TW") { executeKLineFetch(symbol, ".TWO"); } else { throw new Error("查無交易資料"); } return;
+                }
+                var quotes = data.chart.result[0].indicators.quote[0];
+                var adjClose = data.chart.result[0].indicators.adjclose ? data.chart.result[0].indicators.adjclose[0].adjclose : quotes.close;
+                
+                globalValidData = [];
+                for(var i = 0; i < quotes.close.length; i++){
+                    if(quotes.close[i] !== null && quotes.volume[i] !== null && quotes.volume[i] > 0) {
+                        globalValidData.push({ 
+                            open: quotes.open[i], high: quotes.high[i], low: quotes.low[i], 
+                            close: adjClose[i] ? adjClose[i] : quotes.close[i], vol: quotes.volume[i] 
+                        });
+                    }
+                }
+                if(globalValidData.length < 20) { throw new Error("天數不足"); }
+                drawChart(); processIndicators();
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById("lblResult").innerHTML = "<div style='color:#ef4444;'><strong>專屬通道資料解析異常</strong><br>請確認代號是否正確。</div>";
+            });
+        }
+
+        function getMA(days) {
+            var sum = 0;
+            for(var i = globalValidData.length - days; i < globalValidData.length; i++) sum += globalValidData[i].close;
+            return (sum / days);
+        }
+
+        function processIndicators() {
+            var dataLen = globalValidData.length; var currentData = globalValidData[dataLen - 1];
+            var cPrice = currentData.close; var cOpen = currentData.open; var cHigh = currentData.high; var cLow = currentData.low;
+            var actualVol = Math.floor(currentData.vol / 1000);
+            var ma5 = getMA(5); var ma20 = getMA(20);
+            
+            var now = new Date(); var h = now.getHours(); var m = now.getMinutes();
+            var isTrading = (h === 9 && m >= 0) || (h > 9 && h < 13) || (h === 13 && m <= 30);
+            var elapsedMins = (h - 9) * 60 + m; var estVol = actualVol; var volLabel = "今日實量";
+            
+            if (isTrading && elapsedMins > 0 && elapsedMins <= 270) {
+                estVol = Math.floor(actualVol * (270 / elapsedMins)); volLabel = "盤中估量";
+            }
+            var sumVol5 = 0; for(var j = dataLen - 1; j >= dataLen - 5; j--) sumVol5 += globalValidData[j].vol;
+            var avgVol = Math.floor((sumVol5 / 5) / 1000);
+            var maxHigh20 = 0; for(var k = dataLen - 2; k >= dataLen - 21; k--) { if(globalValidData[k] && globalValidData[k].high > maxHigh20) maxHigh20 = globalValidData[k].high; }
+
+            document.getElementById("txtPrice").value = cPrice.toFixed(2); document.getElementById("txtOpen").value = cOpen.toFixed(2);
+            document.getElementById("txtLow").value = cLow.toFixed(2); document.getElementById("lblVolType").innerText = volLabel + "：";
+            document.getElementById("txtVol").value = estVol; document.getElementById("txtAvgVol").value = avgVol;
+            document.getElementById("txtHighPrice").value = maxHigh20 > 0 ? maxHigh20.toFixed(2) : cHigh.toFixed(2); 
+            document.getElementById("txtMA20").value = ma20.toFixed(2);
+            
+            var volRatio = (avgVol > 0) ? (estVol / avgVol).toFixed(1) : 0;
+            var isBreakout = (cPrice >= maxHigh20); var isRedCandle = (cPrice >= cOpen);
+            var isBullish = (ma5 > ma20 && cPrice > ma5); var isBearish = (cPrice < ma20);
+            var volLevelText = (volRatio < 1.2) ? "量縮整理" : ((volRatio < 2.0) ? "溫和放量" : "攻擊爆量");
+            var borderColor = "#cbd5e1"; var summaryTitle = "";
+            
+            if (isBreakout && volRatio >= 1.8) { borderColor = "#dc2626"; summaryTitle = "🎯 強勢帶量過高突破 (波段起漲點)"; } 
+            else if (volRatio >= 2.0 && !isBreakout) { borderColor = "#2563eb"; summaryTitle = "👀 底部異動：爆量結構醞釀中"; } 
+            else if (isBreakout && volRatio < 1.8) { borderColor = "#7c3aed"; summaryTitle = "🛑 無量過高假突破 (高檔誘多)"; } 
+            else { borderColor = "#475569"; summaryTitle = "☕ 縮量常態盤整區間"; }
+
+            var analysisHTML = "<div class='result-title' style='color:" + borderColor + ";'>" + summaryTitle + "</div>";
+            analysisHTML += "<ul class='analysis-list'><li><strong>技術指標：</strong> " + (isBullish ? "<span class='badge bg-red'>多頭排列</span>" : (isBearish ? "<span class='badge bg-green'>破線轉弱</span>" : "<span class='badge bg-gray'>結構盤整</span>")) + " " + (isRedCandle ? "<span class='badge bg-red'>紅K線</span>" : "<span class='badge bg-green'>黑K線</span>") + "</li>";
+            analysisHTML += "<li><strong>量能狀況：</strong> " + volLevelText + " (" + volRatio + "倍均量)。<span class='tip-tag' onclick='showTip(\"vol\")'>這是啥?</span></li></ul>";
+
+            document.getElementById("lblResult").innerHTML = analysisHTML;
+            document.getElementById("resultContainer").style.borderLeftColor = borderColor;
+            
+            var aiReport = generateAIReport(cPrice, cOpen, cHigh, cLow, estVol, avgVol, ma5, ma20, globalValidData);
+            document.getElementById("aiReportBox").innerHTML = aiReport;
+            
+            var predictResult = analyzeNextDayProbability(globalValidData);
+            var predictHtml = "<strong>🔮 隔日走勢預測：</strong>" + predictResult.probHtml + "<br>";
+            predictHtml += "（歷史相似型態樣本數：共符合 " + predictResult.totalPatterns + " 天交易特徵）<br><br>";
+            predictHtml += "<strong>📝 隔日短線策略建議：</strong><br>" + predictResult.advice;
+            document.getElementById("nextDayPredictBox").innerHTML = predictHtml;
+
+            // 執行新增的未來波段趨勢演算
+            analyzeMediumTrend(globalValidData);
+
+            var max3m = globalValidData[0].high; var min3m = globalValidData[0].low;
+            for(var i=0; i<globalValidData.length; i++) {
+                if(globalValidData[i].high > max3m) max3m = globalValidData[i].high;
+                if(globalValidData[i].low < min3m) min3m = globalValidData[i].low;
+            }
+            var positionRatio = (max3m === min3m) ? 50 : ((cPrice - min3m) / (max3m - min3m)) * 100;
+            generateNoviceDashboard(cPrice, ma20, parseFloat(volRatio), positionRatio);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>📊 波段突破自動監控系統 (未來趨勢加強版)</h2>
+        
+        <div class="toolbar">
+            <div class="tool-group">
+                <span>文字：</span>
+                <button class="btn-ctrl" onclick="changeFontSize(1)">A+</button>
+                <button class="btn-ctrl" onclick="changeFontSize(-1)">A-</button>
+            </div>
+            <div class="tool-group">
+                <span>圖表：</span>
+                <button class="btn-ctrl" onclick="changeChartSize(30)">📈+</button>
+                <button class="btn-ctrl" onclick="changeChartSize(-30)">📈-</button>
+            </div>
+        </div>
+
+        <div class="watchlist-group">
+            <select id="selWatchlist" onchange="loadFromWatchlist()">
+                <option value="">-- 我的動態自選股庫 --</option>
+            </select>
+            <div class="notes-area">
+                <label>📝 自訂或覆蓋此股的護城河策略：</label>
+                <textarea id="txtNotes" placeholder="輸入後點擊儲存，可覆蓋內建護城河，建立完全專屬的策略筆記。"></textarea>
+            </div>
+            <div class="btn-action-row">
+                <button class="btn-small btn-add" onclick="addToWatchlist()">儲存/更新</button>
+                <button class="btn-small btn-remove" onclick="removeFromWatchlist()">刪除自選</button>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>股票代號：</label>
+            <input type="text" id="txtSymbol" placeholder="請輸入4碼台股代號 (例: 2317)">
+        </div>
+        <button class="btn btn-fetch" onclick="fetchData()">自動抓取最新資料 & 執行 AI 演算</button>
+        
+        <div class="company-header">
+            <span class="label">分析標的：</span>
+            <span id="lblCompanyName" class="name">等待抓取...</span>
+        </div>
+
+        <div class="info-grid">
+            <div class="novice-info-box">
+                <div class="auto-info-title" style="color:#f97316;">🚦 新手防呆：一眼看懂多空安全區</div>
+                <div id="noviceDashboardBox" class="moat-text">請輸入代號並執行分析...</div>
+            </div>
+
+            <div class="trend-info-box">
+                <div class="auto-info-title color-green">📈 未來中期波段趨勢 (趨勢方向)</div>
+                <div id="mediumTrendBox" class="moat-text">請輸入代號並執行分析...</div>
+            </div>
+
+            <div class="predict-info-box">
+                <div class="auto-info-title color-blue">🔮 隔日股票漲跌統計預測</div>
+                <div id="nextDayPredictBox" class="moat-text">請輸入代號並執行分析...</div>
+            </div>
+
+            <div class="auto-info-box">
+                <div class="auto-info-title color-orange">📌 市場關聯題材與護城河基礎</div>
+                <div id="autoThemesBox" class="themes-container">等待抓取...</div>
+                <div id="autoMoatBox" class="moat-text">等待抓取...</div>
+            </div>
+
+            <div class="ai-info-box">
+                <div class="auto-info-title color-purple">🤖 AI 深度演算診斷報告</div>
+                <div id="aiReportBox" class="moat-text">請輸入代號並執行分析...</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="priceChart"></canvas>
+        </div>
+
+        <div class="grid-layout">
+            <div class="input-group">
+                <label>當前股價：</label>
+                <input type="text" id="txtPrice" readonly>
+            </div>
+            <div class="input-group">
+                <label>今日開盤：</label>
+                <input type="text" id="txtOpen" readonly>
+            </div>
+            <div class="input-group">
+                <label>今日最低：</label>
+                <input type="text" id="txtLow" readonly>
+            </div>
+            <div class="input-group">
+                <label id="lblVolType">今日估量：</label>
+                <input type="text" id="txtVol" readonly>
+            </div>
+            <div class="input-group">
+                <label>5日均量：</label>
+                <input type="text" id="txtAvgVol" readonly>
+            </div>
+            <div class="input-group">
+                <label>20日高點：</label>
+                <input type="text" id="txtHighPrice" readonly>
+            </div>
+            <div class="input-group">
+                <label>月線MA20：</label>
+                <input type="text" id="txtMA20" readonly>
+            </div>
+        </div>
+
+        <div id="resultContainer" class="result-box">
+            <div id="lblResult">等待資料載入...</div>
+        </div>
+    </div>
+</body>
+</html>
