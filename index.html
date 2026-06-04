@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>波段突破自動監控系統 (未來波段趨勢版) V6</title>
+    <title>波段突破自動監控系統 (未來波段趨勢版) V7-SpeedUp</title>
     
     <style>
         :root { --base-font-size: 14px; --chart-height: 190px; }
@@ -41,7 +41,6 @@
         .auto-info-box { background-color: #fffbfa; border: 1px solid #fed7aa; padding: 10px; border-radius: 6px; border-left: 4px solid #f97316;}
         .ai-info-box { background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 10px; border-radius: 6px; border-left: 4px solid #a855f7;}
         .predict-info-box { background-color: #f0f9ff; border: 1px solid #bae6fd; padding: 10px; border-radius: 6px; border-left: 4px solid #0284c7;}
-        /* 新增：未來趨勢盒子的綠色系樣式 */
         .trend-info-box { background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; border-left: 4px solid #16a34a;}
         .novice-info-box { background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 6px; border-left: 4px solid #f97316;}
         
@@ -78,6 +77,7 @@
         var globalValidData = [];
         var currentFontSize = 14;
         var currentChartHeight = 190;
+        var isDrawing = false; // 用於控制畫布防抖動
         
         var baseMoatDatabase = {
             "2330": "【絕對技術壟斷】\n全球先進製程晶圓代工絕對霸主。資本支出壁壘與極高良率無人能及，幾乎壟斷全球高階 AI 晶片製造，具備市場絕對定價權。",
@@ -109,7 +109,13 @@
             if(currentChartHeight < 120) currentChartHeight = 120;
             if(currentChartHeight > 400) currentChartHeight = 400;
             document.documentElement.style.setProperty('--chart-height', currentChartHeight + 'px');
-            if(globalValidData.length > 0) drawChart();
+            if(globalValidData.length > 0 && !isDrawing) {
+                isDrawing = true;
+                window.requestAnimationFrame(function() {
+                    drawChart();
+                    isDrawing = false;
+                });
+            }
         }
 
         function applySettings() {
@@ -236,14 +242,8 @@
             ctx.beginPath(); ctx.arc(lastX - 5, lastY, 4, 0, 2 * Math.PI); ctx.fillStyle = "#ef4444"; ctx.fill();
         }
 
-        function generateAIReport(cPrice, cOpen, cHigh, cLow, estVol, avgVol, ma5, ma20, dataArray) {
-            var max3m = dataArray[0].high; var min3m = dataArray[0].low;
-            for(var i=0; i<dataArray.length; i++) {
-                if(dataArray[i].high > max3m) max3m = dataArray[i].high;
-                if(dataArray[i].low < min3m) min3m = dataArray[i].low;
-            }
+        function generateAIReport(cPrice, cOpen, cHigh, cLow, estVol, avgVol, ma5, ma20, positionRatio) {
             var bias20 = ((cPrice - ma20) / ma20) * 100;
-            var positionRatio = (max3m === min3m) ? 50 : ((cPrice - min3m) / (max3m - min3m)) * 100;
             var body = Math.abs(cPrice - cOpen);
             var upperShadow = cHigh - Math.max(cPrice, cOpen);
             var lowerShadow = Math.min(cPrice, cOpen) - cLow;
@@ -264,7 +264,7 @@
             report += "</div>"; return report;
         }
 
-        function analyzeNextDayProbability(dataArray) {
+        function analyzeNextDayProbability(dataArray, ma5, ma20) {
             if (dataArray.length < 25) return { upProb: 50, totalPatterns: 0, reason: "歷史資料天數不足以建立統計特徵模型。" };
             var matchPatternCount = 0; var nextDayUpCount = 0;
             var todayIdx = dataArray.length - 1; var today = dataArray[todayIdx];
@@ -274,21 +274,17 @@
             var todayAvgV = sumV / 5; var todayVolRatio = todayVol / todayAvgV;
 
             for (var i = 20; i < dataArray.length - 1; i++) {
-                var htmlCur = dataArray[i]; var histPrevSumV = 0;
-                for(var n=i; n>i-5; n--) histPrevSumV += dataArray[n].vol;
-                var histAvgV = histPrevSumV / 5;
-                var histBody = htmlCur.close - htmlCur.open; var histIsRed = histBody >= 0; var histVolRatio = htmlCur.vol / histAvgV;
+                var htmlCur = dataArray[i]; var htmlPrevSumV = 0;
+                for(var n=i; n>i-5; n--) htmlPrevSumV += dataArray[n].vol;
+                var htmlAvgV = htmlPrevSumV / 5;
+                var htmlBody = htmlCur.close - htmlCur.open; var htmlIsRed = htmlBody >= 0; var htmlVolRatio = htmlCur.vol / htmlAvgV;
                 
-                if (histIsRed === todayIsRed && Math.abs(histVolRatio - todayVolRatio) < 0.35) {
+                if (htmlIsRed === todayIsRed && Math.abs(htmlVolRatio - todayVolRatio) < 0.35) {
                     matchPatternCount++;
                     var htmlNextDay = dataArray[i + 1];
                     if (htmlNextDay.close > htmlCur.close) { nextDayUpCount++; }
                 }
             }
-            
-            var sumClose5 = 0; for(var x=todayIdx; x>todayIdx-5; x--) sumClose5 += dataArray[x].close;
-            var sumClose20 = 0; for(var y=todayIdx; y>todayIdx-20; y--) sumClose20 += dataArray[y].close;
-            var ma5 = sumClose5 / 5; var ma20 = sumClose20 / 20;
             
             var trendWeight = 0;
             if (today.close > ma5 && ma5 > ma20) trendWeight = 5;
@@ -317,34 +313,22 @@
             return { probHtml: directionText, advice: actionAdvice, totalPatterns: matchPatternCount, score: finalProb };
         }
 
-        /* ================= 新增：未來波段中期趨勢演算法 ================= */
-        function analyzeMediumTrend(dataArray) {
+        function analyzeMediumTrend(dataArray, ma5, ma20) {
             var dataLen = dataArray.length;
             var todayData = dataArray[dataLen - 1];
             
-            // 計算短、中、長均線
-            var sum5 = 0, sum20 = 0, sum60 = 0;
-            for(var i=dataLen-1; i>=dataLen-5; i--) sum5 += dataArray[i].close;
-            for(var i=dataLen-1; i>=dataLen-20; i--) sum20 += dataArray[i].close;
-            var ma5 = sum5 / 5;
-            var ma20 = sum20 / 20;
-            
-            // 由於只有3個月數據(約60天)，計算40日均線作為長期基底
+            var sum60 = 0;
             var checkDays = Math.min(40, dataLen);
             for(var i=dataLen-1; i>=dataLen-checkDays; i--) sum60 += dataArray[i].close;
             var ma40 = sum60 / checkDays;
 
-            var trendTitle = "";
-            var trendDesc = "";
-            var barColor = "#64748b";
+            var trendTitle = ""; var trendDesc = ""; var barColor = "#64748b";
 
-            // 均線斜率
             var prevSum20 = 0;
             for(var i=dataLen-2; i>=dataLen-21; i--) prevSum20 += dataArray[i].close;
             var prevMa20 = prevSum20 / 20;
-            var ma20Slope = ma20 - prevMa20; // 月線斜率(向上或向下)
+            var ma20Slope = ma20 - prevMa20; 
 
-            // 趨勢狀態邏輯矩陣
             if (todayData.close > ma5 && ma5 > ma20 && ma20 > ma40 && ma20Slope > 0) {
                 trendTitle = "🚀 進入【波段多頭主升段】慣性";
                 trendDesc = "均線呈現標準多頭排列，且月線斜率強勢向上。未來 2-3 週中期大趨勢具備極強的驚人慣性，不容易輕易大跌，每次拉回皆為波段防守買點。";
@@ -371,7 +355,6 @@
             html += "<p style='margin:6px 0 0 0; line-height:1.5; color:#475569; font-size:0.95em;'>" + trendDesc + "</p>";
             document.getElementById("mediumTrendBox").innerHTML = html;
         }
-        /* ========================================================= */
 
         function generateNoviceDashboard(cPrice, ma20, volRatio, positionRatio) {
             var score = 50;
@@ -401,6 +384,7 @@
             document.getElementById("noviceDashboardBox").innerHTML = html;
         }
 
+        // 重大優化：將原先「排隊序列請求」改為「並行 Promise 請求」
         function fetchData() {
             var symbolInput = document.getElementById("txtSymbol").value.replace(/^\s+|\s+$/g, '').toUpperCase().split('.')[0];
             if (symbolInput === "") { alert("請輸入股票代號！"); return; }
@@ -427,42 +411,50 @@
 
             var targetNameUrl = "https://tw.stock.yahoo.com/quote/" + symbolInput;
             var nameProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(targetNameUrl);
-            
-            fetch(nameProxyUrl)
-            .then(res => res.text())
-            .then(html => {
-                var titleMatch = html.match(/<title>(.*?)\(/);
-                if (titleMatch && titleMatch[1]) {
-                    var fName = titleMatch[1].replace(/^\s+|\s+$/g, '');
-                    if(fName.indexOf("Yahoo") === -1) document.getElementById("lblCompanyName").innerText = fName;
-                }
-                var themes = []; var regex = /href="\/concept\/([^"]+)"/g; var match;
-                while ((match = regex.exec(html)) !== null) {
-                    var themeName = decodeURIComponent(match[1]).replace(/^\s+|\s+$/g, '');
-                    if (themeName !== "" && themeName.indexOf("?") === -1 && themes.indexOf(themeName) === -1) themes.push(themeName);
-                }
-                var themesHtml = "";
-                if (themes.length > 0) {
-                    for (var t = 0; t < themes.length; t++) themesHtml += "<span class='theme-badge'>#" + themes[t] + "</span>";
-                } else { themesHtml = "<span class='theme-badge'>#台股標的</span>"; }
-                document.getElementById("autoThemesBox").innerHTML = themesHtml;
-            }).catch(e => { document.getElementById("autoThemesBox").innerHTML = "<span class='theme-badge'>#台股標的</span>"; });
-
-            executeKLineFetch(symbolInput, ".TW");
-        }
-
-        function executeKLineFetch(symbol, suffix) {
-            var targetApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + suffix + "?range=3mo&interval=1d&region=TW&lang=zh-Hant-TW";
+            var targetApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbolInput + ".TW?range=3mo&interval=1d&region=TW&lang=zh-Hant-TW";
             var klineProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(targetApiUrl);
 
-            fetch(klineProxyUrl)
-            .then(response => response.json())
-            .then(data => {
-                if(!data.chart || !data.chart.result || data.chart.result[0].indicators.quote[0].close == null) {
-                    if (suffix === ".TW") { executeKLineFetch(symbol, ".TWO"); } else { throw new Error("查無交易資料"); } return;
+            // 並行發出兩個異步請求
+            Promise.all([
+                fetch(nameProxyUrl).then(res => res.text()).catch(() => null),
+                fetch(klineProxyUrl).then(res => res.json()).catch(() => null)
+            ])
+            .then(([htmlText, klineJson]) => {
+                // 1. 處理股票名稱與題材標籤
+                if (htmlText) {
+                    var titleMatch = htmlText.match(/<title>(.*?)\(/);
+                    if (titleMatch && titleMatch[1]) {
+                        var fName = titleMatch[1].replace(/^\s+|\s+$/g, '');
+                        if(fName.indexOf("Yahoo") === -1) document.getElementById("lblCompanyName").innerText = fName;
+                    }
+                    var themes = []; var regex = /href="\/concept\/([^"]+)"/g; var match;
+                    while ((match = regex.exec(htmlText)) !== null) {
+                        var themeName = decodeURIComponent(match[1]).replace(/^\s+|\s+$/g, '');
+                        if (themeName !== "" && themeName.indexOf("?") === -1 && themes.indexOf(themeName) === -1) themes.push(themeName);
+                    }
+                    var themesHtml = "";
+                    if (themes.length > 0) {
+                        for (var t = 0; t < themes.length; t++) themesHtml += "<span class='theme-badge'>#" + themes[t] + "</span>";
+                    } else { themesHtml = "<span class='theme-badge'>#台股標的</span>"; }
+                    document.getElementById("autoThemesBox").innerHTML = themesHtml;
+                } else {
+                    document.getElementById("autoThemesBox").innerHTML = "<span class='theme-badge'>#台股標的</span>";
                 }
-                var quotes = data.chart.result[0].indicators.quote[0];
-                var adjClose = data.chart.result[0].indicators.adjclose ? data.chart.result[0].indicators.adjclose[0].adjclose : quotes.close;
+
+                // 2. 處理 K 線資料（若上市.TW沒抓到，則嘗試抓上櫃.TWO）
+                if (!klineJson || !klineJson.chart || !klineJson.chart.result || klineJson.chart.result[0].indicators.quote[0].close == null) {
+                    var otcApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbolInput + ".TWO?range=3mo&interval=1d&region=TW&lang=zh-Hant-TW";
+                    var otcProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(otcApiUrl);
+                    return fetch(otcProxyUrl).then(res => res.json());
+                }
+                return klineJson;
+            })
+            .then(finalJson => {
+                if(!finalJson || !finalJson.chart || !finalJson.chart.result || finalJson.chart.result[0].indicators.quote[0].close == null) {
+                    throw new Error("查無交易資料");
+                }
+                var quotes = finalJson.chart.result[0].indicators.quote[0];
+                var adjClose = finalJson.chart.result[0].indicators.adjclose ? finalJson.chart.result[0].indicators.adjclose[0].adjclose : quotes.close;
                 
                 globalValidData = [];
                 for(var i = 0; i < quotes.close.length; i++){
@@ -474,7 +466,10 @@
                     }
                 }
                 if(globalValidData.length < 20) { throw new Error("天數不足"); }
-                drawChart(); processIndicators();
+                
+                // 使用 requestAnimationFrame 防抖動優化繪圖
+                window.requestAnimationFrame(drawChart);
+                processIndicators();
             })
             .catch(err => {
                 console.error(err);
@@ -484,7 +479,8 @@
 
         function getMA(days) {
             var sum = 0;
-            for(var i = globalValidData.length - days; i < globalValidData.length; i++) sum += globalValidData[i].close;
+            var startIdx = globalValidData.length - days;
+            for(var i = startIdx; i < globalValidData.length; i++) sum += globalValidData[i].close;
             return (sum / days);
         }
 
@@ -529,24 +525,27 @@
             document.getElementById("lblResult").innerHTML = analysisHTML;
             document.getElementById("resultContainer").style.borderLeftColor = borderColor;
             
-            var aiReport = generateAIReport(cPrice, cOpen, cHigh, cLow, estVol, avgVol, ma5, ma20, globalValidData);
+            // 效能優化：只在最前面計算一次 3個月最高最低點，後面直接重複使用變數
+            var max3m = globalValidData[0].high; var min3m = globalValidData[0].low;
+            for(var i=0; i<dataLen; i++) {
+                if(globalValidData[i].high > max3m) max3m = globalValidData[i].high;
+                if(globalValidData[i].low < min3m) min3m = globalValidData[i].low;
+            }
+            var positionRatio = (max3m === min3m) ? 50 : ((cPrice - min3m) / (max3m - min3m)) * 100;
+
+            var aiReport = generateAIReport(cPrice, cOpen, cHigh, cLow, estVol, avgVol, ma5, ma20, positionRatio);
             document.getElementById("aiReportBox").innerHTML = aiReport;
             
-            var predictResult = analyzeNextDayProbability(globalValidData);
+            var predictResult = analyzeNextDayProbability(globalValidData, ma5, ma20);
             var predictHtml = "<strong>🔮 隔日走勢預測：</strong>" + predictResult.probHtml + "<br>";
             predictHtml += "（歷史相似型態樣本數：共符合 " + predictResult.totalPatterns + " 天交易特徵）<br><br>";
             predictHtml += "<strong>📝 隔日短線策略建議：</strong><br>" + predictResult.advice;
             document.getElementById("nextDayPredictBox").innerHTML = predictHtml;
 
-            // 執行新增的未來波段趨勢演算
-            analyzeMediumTrend(globalValidData);
+            // 執行未來波段趨勢演算
+            analyzeMediumTrend(globalValidData, ma5, ma20);
 
-            var max3m = globalValidData[0].high; var min3m = globalValidData[0].low;
-            for(var i=0; i<globalValidData.length; i++) {
-                if(globalValidData[i].high > max3m) max3m = globalValidData[i].high;
-                if(globalValidData[i].low < min3m) min3m = globalValidData[i].low;
-            }
-            var positionRatio = (max3m === min3m) ? 50 : ((cPrice - min3m) / (max3m - min3m)) * 100;
+            // 執行傻瓜溫度計
             generateNoviceDashboard(cPrice, ma20, parseFloat(volRatio), positionRatio);
         }
     </script>
