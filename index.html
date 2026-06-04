@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>波段突破自動監控系統 (未來波段趨勢版) V7-SpeedUp</title>
+    <title>波段突破自動監控系統 (持股策略增強版) V8</title>
     
     <style>
         :root { --base-font-size: 14px; --chart-height: 190px; }
@@ -21,7 +21,7 @@
         .watchlist-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: 'Microsoft JhengHei'; font-size: 1em; background-color: #fff; box-sizing: border-box; }
         .notes-area { width: 100%; }
         .notes-area label { display: block; font-weight: bold; color: #166534; margin-bottom: 4px; font-size: 0.9em; }
-        .notes-area textarea { width: 100%; height: 75px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; font-family: 'Microsoft JhengHei'; font-size: 0.95em; resize: none; background-color: #fbfdfb; box-sizing: border-box; }
+        .notes-area textarea { width: 100%; height: 60px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; font-family: 'Microsoft JhengHei'; font-size: 0.95em; resize: none; background-color: #fbfdfb; box-sizing: border-box; }
         .btn-action-row { width: 100%; display: flex; gap: 8px; }
         .btn-small { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; font-family: 'Microsoft JhengHei'; font-size: 0.95em; text-align: center; }
         .btn-add { background-color: #ea580c; } 
@@ -30,6 +30,11 @@
         .input-group { display: flex; align-items: center; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 8px; box-sizing: border-box; }
         .input-group label { width: 95px; font-weight: bold; color: #334155; font-size: 0.95em; flex-shrink: 0; }
         .input-group input { flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 1.05em; width: 100%; box-sizing: border-box; background: #fff; }
+        
+        /* 亮色醒目框：持股成本專用 */
+        .cost-input-group { background: #fff7ed; border: 1px solid #ffedd5; border-left: 5px solid #f97316; }
+        .cost-input-group label { color: #c2410c; }
+        
         .btn { display: block; width: 100%; padding: 12px; color: white; border: none; border-radius: 8px; font-size: 1.05em; cursor: pointer; margin-top: 4px; font-weight: bold; box-sizing: border-box; }
         .btn-fetch { background-color: #16a34a; box-shadow: 0 2px 4px rgba(22,163,74,0.2); } 
         
@@ -38,6 +43,7 @@
         .company-header span.name { font-size: 1.35em; font-weight: bold; color: #dc2626; margin-left: 6px; }
         
         .info-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
+        .holding-info-box { background-color: #fffaf0; border: 1px solid #feebc8; padding: 12px; border-radius: 6px; border-left: 5px solid #dd6b20; display: none; }
         .auto-info-box { background-color: #fffbfa; border: 1px solid #fed7aa; padding: 10px; border-radius: 6px; border-left: 4px solid #f97316;}
         .ai-info-box { background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 10px; border-radius: 6px; border-left: 4px solid #a855f7;}
         .predict-info-box { background-color: #f0f9ff; border: 1px solid #bae6fd; padding: 10px; border-radius: 6px; border-left: 4px solid #0284c7;}
@@ -77,7 +83,7 @@
         var globalValidData = [];
         var currentFontSize = 14;
         var currentChartHeight = 190;
-        var isDrawing = false; // 用於控制畫布防抖動
+        var isDrawing = false; 
         
         var baseMoatDatabase = {
             "2330": "【絕對技術壟斷】\n全球先進製程晶圓代工絕對霸主。資本支出壁壘與極高良率無人能及，幾乎壟斷全球高階 AI 晶片製造，具備市場絕對定價權。",
@@ -129,8 +135,8 @@
                 if (storedData) { myWatchlist = JSON.parse(storedData); } 
                 else {
                     myWatchlist = [
-                        { symbol: "2330", name: "台積電", userNotes: "" },
-                        { symbol: "2317", name: "鴻海", userNotes: "" }
+                        { symbol: "2330", name: "台積電", userNotes: "", userCost: "" },
+                        { symbol: "2317", name: "鴻海", userNotes: "", userCost: "" }
                     ];
                 }
             } catch(e) { myWatchlist = []; }
@@ -155,6 +161,7 @@
                 for(var i=0; i<myWatchlist.length; i++) {
                     if(myWatchlist[i].symbol === sel.value) {
                         document.getElementById("txtNotes").value = myWatchlist[i].userNotes || "";
+                        document.getElementById("txtUserCost").value = myWatchlist[i].userCost || "";
                         break;
                     }
                 }
@@ -165,6 +172,7 @@
         function addToWatchlist() {
             var sym = document.getElementById("txtSymbol").value.replace(/^\s+|\s+$/g, '').toUpperCase().split('.')[0];
             var notes = document.getElementById("txtNotes").value;
+            var cost = document.getElementById("txtUserCost").value.trim();
             if (sym === "") { alert("請先輸入股票代號！"); return; }
             var name = document.getElementById("lblCompanyName").innerText;
             if (name.indexOf("解析") !== -1 || name === "等待抓取..." || name === "查無資料") name = "自選股";
@@ -177,12 +185,13 @@
                 if (myWatchlist[i].symbol === sym) {
                     myWatchlist[i].name = name; 
                     myWatchlist[i].userNotes = notes; 
+                    myWatchlist[i].userCost = cost;
                     saveData(); renderWatchlist();
                     document.getElementById("selWatchlist").value = sym;
-                    alert("✅ 已成功儲存該股自訂筆記！"); return;
+                    alert("✅ 已成功儲存該股自訂筆記與持股成本！"); return;
                 }
             }
-            myWatchlist.push({ symbol: sym, name: name, userNotes: notes });
+            myWatchlist.push({ symbol: sym, name: name, userNotes: notes, userCost: cost });
             saveData(); renderWatchlist();
             document.getElementById("selWatchlist").value = sym;
             alert("✅ 成功加入自選股庫！");
@@ -195,7 +204,9 @@
                 myWatchlist = myWatchlist.filter(function(item){ return item.symbol !== sym; });
                 saveData(); renderWatchlist();
                 document.getElementById("txtNotes").value = "";
+                document.getElementById("txtUserCost").value = "";
                 document.getElementById("autoMoatBox").innerHTML = "等待抓取...";
+                document.getElementById("holdingStrategyBox").style.display = "none";
             }
         }
 
@@ -227,6 +238,27 @@
                 var x = (i / (globalValidData.length - 1)) * w;
                 var currentVolH = (globalValidData[i].vol / maxV) * volH;
                 ctx.fillRect(x - barW/2, h - currentVolH, barW, currentVolH);
+            }
+
+            // 新增功能：如果在圖表範圍內，繪製持股成本線(橘色虛線)
+            var userCostStr = document.getElementById("txtUserCost").value.trim();
+            if(userCostStr !== "" && !isNaN(userCostStr)) {
+                var userCost = parseFloat(userCostStr);
+                if(userCost >= minP && userCost <= maxP) {
+                    var costY = paddingY + (1 - (userCost - minP) / priceRange) * (chartH - paddingY * 2);
+                    ctx.save();
+                    ctx.strokeStyle = "#f97316";
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(0, costY);
+                    ctx.lineTo(w, costY);
+                    ctx.stroke();
+                    ctx.fillStyle = "#f97316";
+                    ctx.font = "10px Arial";
+                    ctx.fillText("我的成本: " + userCost, 5, costY - 4);
+                    ctx.restore();
+                }
             }
 
             ctx.beginPath(); ctx.strokeStyle = "#0284c7"; ctx.lineWidth = 2;
@@ -322,7 +354,7 @@
             for(var i=dataLen-1; i>=dataLen-checkDays; i--) sum60 += dataArray[i].close;
             var ma40 = sum60 / checkDays;
 
-            var trendTitle = ""; var trendDesc = ""; var barColor = "#64748b";
+            var trendTitle = ""; var trendDesc = ""; var barColor = "#64748b"; var trendType = "none";
 
             var prevSum20 = 0;
             for(var i=dataLen-2; i>=dataLen-21; i--) prevSum20 += dataArray[i].close;
@@ -333,27 +365,34 @@
                 trendTitle = "🚀 進入【波段多頭主升段】慣性";
                 trendDesc = "均線呈現標準多頭排列，且月線斜率強勢向上。未來 2-3 週中期大趨勢具備極強的驚人慣性，不容易輕易大跌，每次拉回皆為波段防守買點。";
                 barColor = "#ef4444";
+                trendType = "bull";
             } else if (todayData.close > ma20 && ma20Slope > 0 && ma5 <= ma20) {
                 trendTitle = "⚖️ 處於【多頭高檔震盪整理】";
-                trendDesc = "中期趨勢尚未被破壞，但短線動能（5日線）放緩。未來趨勢預期將拉長進行橫盤箱型洗盤，洗淨浮額後才有機會再度發動攻擊。";
+                trendDesc = "中期趨勢尚未被破壞，但短線動動能（5日線）放緩。未來趨勢預期將拉長進行橫盤箱型洗盤，洗淨浮額後才有機會再度發動攻擊。";
                 barColor = "#eab308";
+                trendType = "shake_up";
             } else if (todayData.close > ma20 && ma20Slope <= 0) {
                 trendTitle = "⚠️ 處於【多空反轉臨界點】";
                 trendDesc = "股價雖在月線上方，但中期均線走平或下彎。未來一週為關鍵扣抵區，若無法放量大紅K拉開距離，大趨勢隨時有轉為中期修正的潛在風險。";
                 barColor = "#f97316";
+                trendType = "warning";
             } else if (todayData.close < ma20 && ma5 < ma20 && ma20Slope < 0) {
                 trendTitle = "❄️ 陷入【中期弱勢空頭修正】";
                 trendDesc = "大趨勢完全被均線死死反壓，且月線斜率加速下墜。未來數週趨勢將持續呈現底底低慣性，切勿盲目猜測低點進場攤平，應等待均線走平。";
                 barColor = "#22c55e";
+                trendType = "bear";
             } else {
                 trendTitle = "🔄 屬於【無方向性渾沌盤整】";
                 trendDesc = "短、中期均線互相糾纏，股價在均線上下反覆穿梭。未來大趨勢尚未明朗，市場正處於築底或高檔出貨的混沌期，建議縮小資金水位。";
                 barColor = "#64748b";
+                trendType = "flat";
             }
 
             var html = "<strong>📈 未來中期波段趨勢：</strong><span style='color:" + barColor + "; font-weight:bold;'>" + trendTitle + "</span><br>";
             html += "<p style='margin:6px 0 0 0; line-height:1.5; color:#475569; font-size:0.95em;'>" + trendDesc + "</p>";
             document.getElementById("mediumTrendBox").innerHTML = html;
+            
+            return trendType;
         }
 
         function generateNoviceDashboard(cPrice, ma20, volRatio, positionRatio) {
@@ -384,7 +423,59 @@
             document.getElementById("noviceDashboardBox").innerHTML = html;
         }
 
-        // 重大優化：將原先「排隊序列請求」改為「並行 Promise 請求」
+        // 新增功能：持股成本動態策略診斷引擎
+        function evalHoldingStrategy(cPrice, cLow, ma20, trendType) {
+            var costStr = document.getElementById("txtUserCost").value.trim();
+            var box = document.getElementById("holdingStrategyBox");
+            if(costStr === "" || isNaN(costStr)) {
+                box.style.display = "none";
+                return;
+            }
+            
+            var cost = parseFloat(costStr);
+            var returnRate = ((cPrice - cost) / cost) * 100;
+            var isProfit = (returnRate >= 0);
+            
+            var titleText = "";
+            var actionText = "";
+            var color = "#718096";
+            
+            if(isProfit) {
+                // 獲利狀態下的策略
+                color = "#e53e3e"; // 喜慶紅
+                titleText = "💰 目前持股狀態：【獲利中 (報酬率: +" + returnRate.toFixed(1) + "%)】";
+                
+                if(trendType === "bull") {
+                    actionText = "👉 <strong>建議：【持續續抱，讓利潤奔跑】</strong><br>目前技術結構處於強勢主升段。中期趨勢極佳，切勿太早過早預設高點利潤出場。防守策略建議設定『移動停利』：若收盤價未跌破 <strong>月線 (" + ma20.toFixed(1) + " 元)</strong> 或 <strong>今日低點 (" + cLow.toFixed(1) + " 元)</strong> 則持股續抱到底。";
+                } else if(trendType === "warning" || trendType === "shake_up") {
+                    actionText = "👉 <strong>建議：【分批移動停利，鎖定部分利潤】</strong><br>雖然目前仍是獲利，但大盤或個股高檔動能已經開始趨緩、進入多空反轉臨界點。建議可以先在今天或明日分批獲利了結 1/3 或 1/2 入袋為安，剩餘部位以月線作為最後防守點。";
+                } else {
+                    actionText = "👉 <strong>建議：【利潤出現侵蝕訊號，隨時準備出場】</strong><br>個股中期走勢轉弱，您的利潤正逐漸縮水。不排除轉為弱勢格局。建議設定今日低點為最後停利線，跌破即全面清倉。";
+                }
+            } else {
+                // 套牢/虧損狀態下的策略
+                color = "#38a169"; // 防守綠
+                titleText = "⚠️ 目前持股狀態：【套牢中 (報酬率: " + returnRate.toFixed(1) + "%)】";
+                
+                if(returnRate <= -7.0) {
+                    color = "#e53e3e"; // 嚴重虧損改紅色警戒
+                    actionText = "🚨 <strong>建議：【嚴格執行停損，快速售出或果斷減碼】</strong><br>虧損已超過標準停損閾值 (-7%)。市場趨勢已經證明先前的判斷有誤。切勿抱持『不賣就不算賠』的鴕鳥心態盲目攤平。建議果斷分批出清，保留資金實力，尋求下一檔帶量突破股。";
+                } else if(trendType === "bear") {
+                    actionText = "🚨 <strong>建議：【破位弱勢空頭，建議反彈快速售出/不宜留戀】</strong><br>個股技術面已破位跌入中期弱勢空頭。上方短中期均線反壓沉重。即使目前虧損尚未極大，但趨勢探底慣性仍在，『少輸就是贏』，強烈建議利用盤中任何無量小反彈時，執行快售或降低部位。";
+                } else if(trendType === "bull" || trendType === "shake_up") {
+                    actionText = "👉 <strong>建議：【暫時續抱觀察，設定底線防守點】</strong><br>目前雖然帳面微幅套牢，但個股大趨勢仍未完全翻空（股價可能在洗盤）。不急於在洗盤低點割肉，建議以 <strong>月線 (" + ma20.toFixed(1) + " 元)</strong> 或 <strong>今日最低價 (" + cLow.toFixed(1) + " 元)</strong> 為嚴格停損點。若收盤不幸跌破則必須果斷快速售出。";
+                } else {
+                    actionText = "👉 <strong>建議：【常態盤整套牢，多空不明，切勿盲目加碼接刀】</strong><br>個股目前在混沌盤整區。上下方向不明。建議保持原部位不動，靜待放量方向表態。切勿在盤整期不斷向下買進攤平，避免資金被長時間凍結。";
+                }
+            }
+            
+            var html = "<div class='auto-info-title' style='color:" + color + ";'>" + titleText + "</div>";
+            html += "<p style='margin:6px 0 0 0; line-height:1.5; color:#2d3748; font-size:0.95em;'>" + actionText + "</p>";
+            box.innerHTML = html;
+            box.style.borderLeftColor = color;
+            box.style.display = "block";
+        }
+
         function fetchData() {
             var symbolInput = document.getElementById("txtSymbol").value.replace(/^\s+|\s+$/g, '').toUpperCase().split('.')[0];
             if (symbolInput === "") { alert("請輸入股票代號！"); return; }
@@ -408,19 +499,18 @@
             document.getElementById("nextDayPredictBox").innerHTML = "計算中...";
             document.getElementById("mediumTrendBox").innerHTML = "計算中...";
             document.getElementById("noviceDashboardBox").innerHTML = "分析中...";
+            document.getElementById("holdingStrategyBox").style.display = "none";
 
             var targetNameUrl = "https://tw.stock.yahoo.com/quote/" + symbolInput;
             var nameProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(targetNameUrl);
             var targetApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbolInput + ".TW?range=3mo&interval=1d&region=TW&lang=zh-Hant-TW";
             var klineProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(targetApiUrl);
 
-            // 並行發出兩個異步請求
             Promise.all([
                 fetch(nameProxyUrl).then(res => res.text()).catch(() => null),
                 fetch(klineProxyUrl).then(res => res.json()).catch(() => null)
             ])
             .then(([htmlText, klineJson]) => {
-                // 1. 處理股票名稱與題材標籤
                 if (htmlText) {
                     var titleMatch = htmlText.match(/<title>(.*?)\(/);
                     if (titleMatch && titleMatch[1]) {
@@ -441,7 +531,6 @@
                     document.getElementById("autoThemesBox").innerHTML = "<span class='theme-badge'>#台股標的</span>";
                 }
 
-                // 2. 處理 K 線資料（若上市.TW沒抓到，則嘗試抓上櫃.TWO）
                 if (!klineJson || !klineJson.chart || !klineJson.chart.result || klineJson.chart.result[0].indicators.quote[0].close == null) {
                     var otcApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbolInput + ".TWO?range=3mo&interval=1d&region=TW&lang=zh-Hant-TW";
                     var otcProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(otcApiUrl);
@@ -467,7 +556,6 @@
                 }
                 if(globalValidData.length < 20) { throw new Error("天數不足"); }
                 
-                // 使用 requestAnimationFrame 防抖動優化繪圖
                 window.requestAnimationFrame(drawChart);
                 processIndicators();
             })
@@ -525,7 +613,6 @@
             document.getElementById("lblResult").innerHTML = analysisHTML;
             document.getElementById("resultContainer").style.borderLeftColor = borderColor;
             
-            // 效能優化：只在最前面計算一次 3個月最高最低點，後面直接重複使用變數
             var max3m = globalValidData[0].high; var min3m = globalValidData[0].low;
             for(var i=0; i<dataLen; i++) {
                 if(globalValidData[i].high > max3m) max3m = globalValidData[i].high;
@@ -542,17 +629,20 @@
             predictHtml += "<strong>📝 隔日短線策略建議：</strong><br>" + predictResult.advice;
             document.getElementById("nextDayPredictBox").innerHTML = predictHtml;
 
-            // 執行未來波段趨勢演算
-            analyzeMediumTrend(globalValidData, ma5, ma20);
+            // 執行未來波段趨勢演算，並接收趨勢類型
+            var trendType = analyzeMediumTrend(globalValidData, ma5, ma20);
 
             // 執行傻瓜溫度計
             generateNoviceDashboard(cPrice, ma20, parseFloat(volRatio), positionRatio);
+
+            // 執行持股策略評估
+            evalHoldingStrategy(cPrice, cLow, ma20, trendType);
         }
     </script>
 </head>
 <body>
     <div class="container">
-        <h2>📊 波段突破自動監控系統 (未來趨勢加強版)</h2>
+        <h2>📊 波段突破自動監控系統 (持股策略增強版)</h2>
         
         <div class="toolbar">
             <div class="tool-group">
@@ -585,6 +675,12 @@
             <label>股票代號：</label>
             <input type="text" id="txtSymbol" placeholder="請輸入4碼台股代號 (例: 2317)">
         </div>
+
+        <div class="input-group cost-input-group">
+            <label>持股成本：</label>
+            <input type="number" id="txtUserCost" step="0.1" placeholder="請輸入您的買進成本價 (留空則不進行持股分析)">
+        </div>
+
         <button class="btn btn-fetch" onclick="fetchData()">自動抓取最新資料 & 執行 AI 演算</button>
         
         <div class="company-header">
@@ -593,6 +689,8 @@
         </div>
 
         <div class="info-grid">
+            <div id="holdingStrategyBox" class="holding-info-box"></div>
+
             <div class="novice-info-box">
                 <div class="auto-info-title" style="color:#f97316;">🚦 新手防呆：一眼看懂多空安全區</div>
                 <div id="noviceDashboardBox" class="moat-text">請輸入代號並執行分析...</div>
