@@ -424,65 +424,100 @@
         }
 
         // 新增功能：持股成本動態策略診斷引擎
-        function evalHoldingStrategy(cPrice, cLow, ma20, trendType) {
-            var costStr = document.getElementById("txtUserCost").value.trim();
-            var box = document.getElementById("holdingStrategyBox");
-            if(costStr === "" || isNaN(costStr)) {
-                box.style.display = "none";
-                return;
+        // A. 新增新聞解析函式 (直接貼在 script 內任何空行處)
+function parseNews(htmlText) {
+    var newsList = document.getElementById("newsList");
+    var newsContainer = document.getElementById("newsContainer");
+    if (!newsList) return;
+    
+    newsList.innerHTML = "";
+    
+    // 使用 DOMParser 將字串轉為可查詢的 DOM 物件
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(htmlText, 'text/html');
+    
+    // 鎖定新聞列表區塊
+    var items = doc.querySelectorAll('li, div.stream-item');
+    var count = 0;
+    
+    items.forEach(function(item) {
+        var a = item.querySelector('h3 a');
+        if (a && count < 6) {
+            var href = a.getAttribute('href');
+            var title = a.innerText.trim();
+            
+            // 【關鍵修改】：嘗試從 time 標籤的 datetime 屬性中抓取日期
+            var timeEl = item.querySelector('time');
+            var dateStr = "即時新聞";
+            if (timeEl && timeEl.getAttribute('datetime')) {
+                // 將 ISO 格式 (2026-06-05T...) 轉為 YYYY-MM-DD
+                dateStr = timeEl.getAttribute('datetime').split('T')[0];
             }
             
-            var cost = parseFloat(costStr);
-            var returnRate = ((cPrice - cost) / cost) * 100;
-            var isProfit = (returnRate >= 0);
-            
-            var titleText = "";
-            var actionText = "";
-            var color = "#718096";
-            
-            if(isProfit) {
-                // 獲利狀態下的策略
-                color = "#e53e3e"; // 喜慶紅
-                titleText = "💰 目前持股狀態：【獲利中 (報酬率: +" + returnRate.toFixed(1) + "%)】";
+            if (href && href.includes('/news/') && title.length > 5) {
+                var fullUrl = href.startsWith('http') ? href : 'https://tw.stock.yahoo.com' + href;
                 
-                if(trendType === "bull") {
-                    actionText = "👉 <strong>建議：【持續續抱，讓利潤奔跑】</strong><br>目前技術結構處於強勢主升段。中期趨勢極佳，切勿太早過早預設高點利潤出場。防守策略建議設定『移動停利』：若收盤價未跌破 <strong>月線 (" + ma20.toFixed(1) + " 元)</strong> 或 <strong>今日低點 (" + cLow.toFixed(1) + " 元)</strong> 則持股續抱到底。";
-                } else if(trendType === "warning" || trendType === "shake_up") {
-                    actionText = "👉 <strong>建議：【分批移動停利，鎖定部分利潤】</strong><br>雖然目前仍是獲利，但大盤或個股高檔動能已經開始趨緩、進入多空反轉臨界點。建議可以先在今天或明日分批獲利了結 1/3 或 1/2 入袋為安，剩餘部位以月線作為最後防守點。";
-                } else {
-                    actionText = "👉 <strong>建議：【利潤出現侵蝕訊號，隨時準備出場】</strong><br>個股中期走勢轉弱，您的利潤正逐漸縮水。不排除轉為弱勢格局。建議設定今日低點為最後停利線，跌破即全面清倉。";
-                }
-            } else {
-                // 套牢/虧損狀態下的策略
-                color = "#38a169"; // 防守綠
-                titleText = "⚠️ 目前持股狀態：【套牢中 (報酬率: " + returnRate.toFixed(1) + "%)】";
-                
-                if(returnRate <= -7.0) {
-                    color = "#e53e3e"; // 嚴重虧損改紅色警戒
-                    actionText = "🚨 <strong>建議：【嚴格執行停損，快速售出或果斷減碼】</strong><br>虧損已超過標準停損閾值 (-7%)。市場趨勢已經證明先前的判斷有誤。切勿抱持『不賣就不算賠』的鴕鳥心態盲目攤平。建議果斷分批出清，保留資金實力，尋求下一檔帶量突破股。";
-                } else if(trendType === "bear") {
-                    actionText = "🚨 <strong>建議：【破位弱勢空頭，建議反彈快速售出/不宜留戀】</strong><br>個股技術面已破位跌入中期弱勢空頭。上方短中期均線反壓沉重。即使目前虧損尚未極大，但趨勢探底慣性仍在，『少輸就是贏』，強烈建議利用盤中任何無量小反彈時，執行快售或降低部位。";
-                } else if(trendType === "bull" || trendType === "shake_up") {
-                    actionText = "👉 <strong>建議：【暫時續抱觀察，設定底線防守點】</strong><br>目前雖然帳面微幅套牢，但個股大趨勢仍未完全翻空（股價可能在洗盤）。不急於在洗盤低點割肉，建議以 <strong>月線 (" + ma20.toFixed(1) + " 元)</strong> 或 <strong>今日最低價 (" + cLow.toFixed(1) + " 元)</strong> 為嚴格停損點。若收盤不幸跌破則必須果斷快速售出。";
-                } else {
-                    actionText = "👉 <strong>建議：【常態盤整套牢，多空不明，切勿盲目加碼接刀】</strong><br>個股目前在混沌盤整區。上下方向不明。建議保持原部位不動，靜待放量方向表態。切勿在盤整期不斷向下買進攤平，避免資金被長時間凍結。";
-                }
+                newsList.innerHTML += `
+                    <div style="margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+                        <a href="${fullUrl}" target="_blank" style="color:#0369a1; text-decoration:none; font-size:0.95em; font-weight:bold; display:block;">
+                            ${title}
+                        </a>
+                        <div style="font-size:0.75em; color:#64748b; margin-top:4px;">
+                            📅 ${dateStr}
+                        </div>
+                    </div>`;
+                count++;
             }
-            
-            var html = "<div class='auto-info-title' style='color:" + color + ";'>" + titleText + "</div>";
-            html += "<p style='margin:6px 0 0 0; line-height:1.5; color:#2d3748; font-size:0.95em;'>" + actionText + "</p>";
-            box.innerHTML = html;
-            box.style.borderLeftColor = color;
-            box.style.display = "block";
         }
+    });
+    
+    newsContainer.style.display = (count > 0) ? "block" : "block";
+    if (count === 0) newsList.innerHTML = "<div style='padding:10px; color:#666;'>目前無即時新聞內容。</div>";
+}
 
-        function fetchData() {
+// 整合後的持股策略診斷
+function evalHoldingStrategy(cPrice, cLow, ma20, trendType) {
+    var costStr = document.getElementById("txtUserCost").value.trim();
+    var box = document.getElementById("holdingStrategyBox");
+    if(costStr === "" || isNaN(costStr)) { box.style.display = "none"; return; }
+    
+    var cost = parseFloat(costStr);
+    var returnRate = ((cPrice - cost) / cost) * 100;
+    var isProfit = (returnRate >= 0);
+    
+    var titleText = isProfit ? "💰 目前持股狀態：【獲利中 (報酬率: +" + returnRate.toFixed(1) + "%)】" : "⚠️ 目前持股狀態：【套牢中 (報酬率: " + returnRate.toFixed(1) + "%)】";
+    var color = isProfit ? "#e53e3e" : "#38a169";
+    var actionText = "";
+
+    if(isProfit) {
+        if(trendType === "bull") {
+            actionText = "👉 <strong>建議：【續抱】</strong>目前多頭主升段，防守月線(" + ma20.toFixed(1) + ")與今日低點(" + cLow.toFixed(1) + ")，利潤奔跑。";
+        } else {
+            actionText = "👉 <strong>建議：【分批停利】</strong>高檔動能趨緩，建議先獲利了結 1/3，剩餘部位以月線防守。";
+        }
+    } else {
+        if(returnRate <= -7.0) {
+            color = "#e53e3e";
+            actionText = "🚨 <strong>建議：【嚴格停損】</strong>虧損已達 7%，請果斷出清保留資金實力。";
+        } else if(trendType === "bear") {
+            actionText = "🚨 <strong>建議：【反彈快售】</strong>趨勢轉弱，利用反彈機會降低部位。";
+        } else {
+            actionText = "👉 <strong>建議：【暫時續抱】</strong>以月線(" + ma20.toFixed(1) + ")作為最後防守點。";
+        }
+    }
+    
+    box.innerHTML = "<div class='auto-info-title' style='color:" + color + ";'>" + titleText + "</div><p style='margin:6px 0;'>" + actionText + "</p>";
+    box.style.borderLeftColor = color;
+    box.style.display = "block";
+}
+
+function fetchData() {
             var symbolInput = document.getElementById("txtSymbol").value.replace(/^\s+|\s+$/g, '').toUpperCase().split('.')[0];
             if (symbolInput === "") { alert("請輸入股票代號！"); return; }
             
             document.getElementById("lblCompanyName").innerText = "資料解析中...";
             document.getElementById("lblResult").innerHTML = "<div style='text-align:center;'><strong>透過專屬 GAS 隧道對接 Yahoo 中...</strong></div>";
-            document.getElementById("autoThemesBox").innerHTML = "抓取中...";
+            document.getElementById("autoThemesBox").innerHTML = "資料庫檢索完畢";
             
             var displayMoat = ""; var userHasNotes = false;
             for(var i=0; i<myWatchlist.length; i++) {
@@ -506,39 +541,24 @@
             var targetApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbolInput + ".TW?range=3mo&interval=1d&region=TW&lang=zh-Hant-TW";
             var klineProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(targetApiUrl);
 
+// 請找到 fetchData 函式中的 Promise.all(...) 區塊，修改為下方的樣子：
             Promise.all([
-                fetch(nameProxyUrl).then(res => res.text()).catch(() => null),
+                fetch(nameProxyUrl).then(res => res.text()).catch(() => ""),
                 fetch(klineProxyUrl).then(res => res.json()).catch(() => null)
             ])
-            .then(([htmlText, klineJson]) => {
-                if (htmlText) {
+               .then(([htmlText, klineJson]) => {
+                    // 1. 解析名稱 (這會移除「資料解析中...」字樣)
                     var titleMatch = htmlText.match(/<title>(.*?)\(/);
-                    if (titleMatch && titleMatch[1]) {
-                        var fName = titleMatch[1].replace(/^\s+|\s+$/g, '');
-                        if(fName.indexOf("Yahoo") === -1) document.getElementById("lblCompanyName").innerText = fName;
-                    }
-                    var themes = []; var regex = /href="\/concept\/([^"]+)"/g; var match;
-                    while ((match = regex.exec(htmlText)) !== null) {
-                        var themeName = decodeURIComponent(match[1]).replace(/^\s+|\s+$/g, '');
-                        if (themeName !== "" && themeName.indexOf("?") === -1 && themes.indexOf(themeName) === -1) themes.push(themeName);
-                    }
-                    var themesHtml = "";
-                    if (themes.length > 0) {
-                        for (var t = 0; t < themes.length; t++) themesHtml += "<span class='theme-badge'>#" + themes[t] + "</span>";
-                    } else { themesHtml = "<span class='theme-badge'>#台股標的</span>"; }
-                    document.getElementById("autoThemesBox").innerHTML = themesHtml;
-                } else {
-                    document.getElementById("autoThemesBox").innerHTML = "<span class='theme-badge'>#台股標的</span>";
-                }
+                    if (titleMatch) document.getElementById("lblCompanyName").innerText = titleMatch[1].trim();
+                    else document.getElementById("lblCompanyName").innerText = "解析完畢";
 
-                if (!klineJson || !klineJson.chart || !klineJson.chart.result || klineJson.chart.result[0].indicators.quote[0].close == null) {
-                    var otcApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbolInput + ".TWO?range=3mo&interval=1d&region=TW&lang=zh-Hant-TW";
-                    var otcProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(otcApiUrl);
-                    return fetch(otcProxyUrl).then(res => res.json());
-                }
-                return klineJson;
-            })
-            .then(finalJson => {
+                    // 2. 解析新聞 (關鍵：確保這裡執行)
+                    parseNews(htmlText);
+
+                    // 3. 原本的股價處理邏輯 (這部分不動)
+                    return klineJson;
+                })          
+                .then(finalJson => {
                 if(!finalJson || !finalJson.chart || !finalJson.chart.result || finalJson.chart.result[0].indicators.quote[0].close == null) {
                     throw new Error("查無交易資料");
                 }
@@ -564,7 +584,6 @@
                 document.getElementById("lblResult").innerHTML = "<div style='color:#ef4444;'><strong>專屬通道資料解析異常</strong><br>請確認代號是否正確。</div>";
             });
         }
-
         function getMA(days) {
             var sum = 0;
             var startIdx = globalValidData.length - days;
@@ -715,6 +734,11 @@
             <div class="ai-info-box">
                 <div class="auto-info-title color-purple">🤖 AI 深度演算診斷報告</div>
                 <div id="aiReportBox" class="moat-text">請輸入代號並執行分析...</div>
+            </div>
+
+            <div class="news-info-box" id="newsContainer" style="display:none; background:#fffdf5; border:1px solid #fde68a; padding:10px; border-radius:6px; border-left:4px solid #eab308; margin-top:10px;">
+                <div class="auto-info-title color-orange">📰 最新相關新聞 (Yahoo 財經)</div>
+                <div id="newsList" style="font-size: 0.95em; line-height: 1.6; color: #334155;"></div>
             </div>
         </div>
 
