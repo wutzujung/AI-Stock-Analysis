@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>波段突破自動監控系統 (持股策略增強版) V8</title>
+    <title>波段突破自動監控系統 (AI演算+題材筆記版) V11</title>
     
     <style>
         :root { --base-font-size: 14px; --chart-height: 190px; }
@@ -541,43 +541,105 @@ function fetchData() {
             var targetApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbolInput + ".TW?range=3mo&interval=1d&region=TW&lang=zh-Hant-TW";
             var klineProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(targetApiUrl);
 
-// 請找到 fetchData 函式中的 Promise.all(...) 區塊，修改為下方的樣子：
+            // 【新增】抓取大盤 (^TWII 是台股加權指數代號)
+            var marketApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/%5ETWII?range=1mo&interval=1d&region=TW&lang=zh-Hant-TW";
+            var marketProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(marketApiUrl);
+
             Promise.all([
                 fetch(nameProxyUrl).then(res => res.text()).catch(() => ""),
-                fetch(klineProxyUrl).then(res => res.json()).catch(() => null)
+                fetch(klineProxyUrl).then(res => res.json()).catch(() => null),
+                fetch(marketProxyUrl).then(res => res.json()).catch(() => null)
             ])
-               .then(([htmlText, klineJson]) => {
+               .then(([htmlText, klineJson, marketJson]) => {
+                    console.log("大盤數值測試:", marketJson.chart.result[0].meta.regularMarketPrice, marketJson.chart.result[0].meta.previousClose);
+                    // 【除錯用】按下抓取後，請打開瀏覽器 F12 的「Console」面板看印出來的內容
+                    console.log("個股資料:", klineJson);
+                    console.log("大盤資料:", marketJson);
+
                     // 1. 解析名稱 (這會移除「資料解析中...」字樣)
                     var titleMatch = htmlText.match(/<title>(.*?)\(/);
-                    if (titleMatch) document.getElementById("lblCompanyName").innerText = titleMatch[1].trim();
-                    else document.getElementById("lblCompanyName").innerText = "解析完畢";
+                    var companyName = titleMatch ? titleMatch[1].trim() : "解析完畢";
+
+                    document.getElementById("lblCompanyName").innerText = companyName;
+
+                    checkDispositionAuto(symbolInput);
 
                     // 2. 解析新聞 (關鍵：確保這裡執行)
                     parseNews(htmlText);
 
-                    // 3. 原本的股價處理邏輯 (這部分不動)
-                    return klineJson;
+                    // 【新增】計算真實的大盤漲跌幅
+                    var marketChangePercent = 0;
+                    if (marketJson && marketJson.chart && marketJson.chart.result && marketJson.chart.result[0].indicators.quote[0].close) {
+                        var closeData = marketJson.chart.result[0].indicators.quote[0].close;
+                        
+                        var mToday = null;
+
+                        for (var i = closeData.length - 1; i >= 0; i--) {
+                            if (closeData[i] !== null) {
+                                mToday = closeData[i];
+
+                                for (var j = i - 1; j >= 0; j--) {
+                                    if (closeData[j] !== null) {
+                                        var mPrev = closeData[j];
+                                        marketChangePercent = ((mToday - mPrev) / mPrev) * 100;
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    // 將計算結果暫存起來，待會傳給 performMarketCorrelation
+                    return { klineJson, marketChangePercent };
                 })          
-                .then(finalJson => {
-                if(!finalJson || !finalJson.chart || !finalJson.chart.result || finalJson.chart.result[0].indicators.quote[0].close == null) {
+                .then(({klineJson, marketChangePercent}) => {
+
+                if (!klineJson || !klineJson.chart || !klineJson.chart.result || klineJson.chart.result.length === 0) {
+                    console.log("資料異常:", klineJson);
                     throw new Error("查無交易資料");
                 }
-                var quotes = finalJson.chart.result[0].indicators.quote[0];
-                var adjClose = finalJson.chart.result[0].indicators.adjclose ? finalJson.chart.result[0].indicators.adjclose[0].adjclose : quotes.close;
-                
+
+                var result = klineJson.chart.result[0];
+
+                var quotes;
+                if (result.indicators && result.indicators.quote && result.indicators.quote[0]) {
+                    quotes = result.indicators.quote[0];
+                } else {
+                    console.warn("指標資料缺失，嘗試使用 meta 數據");
+                    throw new Error("查無成交指標");
+                }
+
+                var finalJson = klineJson;
+                var adjClose = result.indicators.adjclose ? result.indicators.adjclose[0].adjclose : quotes.close;
+               
                 globalValidData = [];
                 for(var i = 0; i < quotes.close.length; i++){
-                    if(quotes.close[i] !== null && quotes.volume[i] !== null && quotes.volume[i] > 0) {
+                    if(quotes.close[i] !== null) {
                         globalValidData.push({ 
-                            open: quotes.open[i], high: quotes.high[i], low: quotes.low[i], 
-                            close: adjClose[i] ? adjClose[i] : quotes.close[i], vol: quotes.volume[i] 
+                            open: quotes.open ? quotes.open[i] : 0,
+                            high: quotes.high ? quotes.high[i] : 0,
+                            low: quotes.low ? quotes.low[i] : 0,
+                            close: adjClose[i] ? adjClose[i] : quotes.close[i],
+                            vol: quotes.volume ? quotes.volume[i] : 0
                         });
                     }
                 }
-                if(globalValidData.length < 20) { throw new Error("天數不足"); }
+                if(globalValidData.length < 5) { 
+                    throw new Error("天數不足"); 
+                }
                 
                 window.requestAnimationFrame(drawChart);
+                // === 新增：大盤關聯邏輯開始 ===
+                var todayClose = quotes.close[quotes.close.length - 1];
+                var yesterdayClose = quotes.close[quotes.close.length - 2];
+                var stockChangePercent = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
+
+                // 呼叫分析並顯示 (假設目前大盤為 -1.13%，您可以自行調整該數值)
+                performMarketCorrelation(stockChangePercent, parseFloat(marketChangePercent).toFixed(2));
+
                 processIndicators();
+                // === 新增：大盤關聯邏輯結束 ===
             })
             .catch(err => {
                 console.error(err);
@@ -657,11 +719,70 @@ function fetchData() {
             // 執行持股策略評估
             evalHoldingStrategy(cPrice, cLow, ma20, trendType);
         }
+        // 大盤聯動分析邏輯
+        function performMarketCorrelation(stockChangePercent, marketChange) {
+            const sPercent = parseFloat(stockChangePercent).toFixed(2);
+            const mPercent = parseFloat(marketChange).toFixed(2);
+
+            const diff = parseFloat(sPercent) - parseFloat(mPercent);
+            let analysis = "";
+    
+            // 判斷邏輯
+            if (Math.abs(diff) < 0.5) {
+                analysis = "同步大盤 (隨勢震盪)";
+            } else if (diff > 1.0) {
+                analysis = "強於大盤 (主力逆勢護盤)";
+            } else if (diff < -1.0) {
+                analysis = "弱於大盤 (避險賣壓沉重)";
+            } else {
+                analysis = diff > 0 ? "略強於大盤" : "略弱於大盤";
+            }
+
+            var mIndex = document.getElementById('marketIndex');
+            var mTrend = document.getElementById('marketTrend');
+
+            if(mIndex) {
+                mIndex.innerHTML = `個股: <span style="color:blue;">${sPercent}%</span> | 大盤: <span style="color:red;">${mPercent}%</span>`;
+            }
+            if(mTrend) {
+                mTrend.innerText = analysis;
+            }
+
+            // 自動將分析結果寫入 AI 診斷報告的最下方
+            var aiBox = document.getElementById("aiReportBox");
+            if(aiBox) {
+                aiBox.innerHTML += `<br><br><div style="border-top:1px solid #ddd; padding-top:5px; font-size:0.9em; color:#475569;"><strong>🔍 大盤關聯診斷：</strong>今日個股 ${sPercent}%，大盤 ${mPercent}%。${analysis}。</div>`;
+            }
+        }
+        // 自動檢查處置股 (全自動版)
+        async function checkDispositionAuto(symbol) {
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbyw9bqnaT_oXDx7PRe0gDEl8xpNG8sPzZ4KYYq5kA7zJb6KnXFq81tt2IcjnqUJLZ64Yw/exec";
+            const timestamp = new Date().getTime();
+            try {
+                const response = await fetch(`${GAS_URL}?symbol=${symbol}`);
+                const data = await response.json();
+
+                console.log("收到的日期格式:", data.expiryDate);
+
+                if (data && data.isDisposition === true) {
+                    const nameEl = document.getElementById("lblCompanyName");
+
+                    if (!nameEl.innerHTML.includes("處置中")) {
+                        nameEl.innerHTML += ` <span style="color:white; background:red; padding:1px 6px; border-radius:4px; font-size:12px; margin-left:8px; font-weight:bold;">
+                            處置中 (起訖日期: ${data.expiryDate})
+                        </span>`;
+                    }
+                }
+            } catch (e) {
+                console.error("查詢失敗:", e);
+            }
+        }
     </script>
 </head>
 <body>
     <div class="container">
-        <h2>📊 波段突破自動監控系統 (持股策略增強版)</h2>
+        <h2>波段突破自動監控系統 (AI演算+題材筆記版) V11</h2>
+
         
         <div class="toolbar">
             <div class="tool-group">
@@ -709,7 +830,11 @@ function fetchData() {
 
         <div class="info-grid">
             <div id="holdingStrategyBox" class="holding-info-box"></div>
-
+            
+        <div id="market-status" style="background: #eef2f7; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; border: 1px solid #d1d9e6; text-align: center;">
+            大盤：<span id="marketIndex">讀取中...</span> |
+            聯動診斷：<span id="marketTrend" style="font-weight: bold; color: #2980b9;">分析中...</span>
+        </div>
             <div class="novice-info-box">
                 <div class="auto-info-title" style="color:#f97316;">🚦 新手防呆：一眼看懂多空安全區</div>
                 <div id="noviceDashboardBox" class="moat-text">請輸入代號並執行分析...</div>
