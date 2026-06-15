@@ -674,11 +674,16 @@ function fetchData() {
             var TWELVE_MINUTES = 30 * 60 * 1000;
 
             if (cachedData) {
-                var parsed = JSON.parse(cachedData);
-                if ((now - parsed.timestamp) < TWELVE_MINUTES) {
-                    console.log("從快取讀取籌碼 (30分內):", parsed);
-                    window.processInstitutionalResult(parsed);
-                    return;
+                try {
+                    var parsed = JSON.parse(cachedData);
+                    if ((now - parsed.timestamp) < TWELVE_MINUTES) {
+                        console.log("從快取讀取籌碼 (30分內):", parsed);
+                        window.processInstitutionalResult(parsed);
+                        return;
+                        }
+                } catch (e) {
+                    console.warn("快取格式錯誤，清除中...");
+                    localStorage.removeItem(cacheKey);
                 }
             }
 
@@ -687,12 +692,11 @@ function fetchData() {
             fetch(url)
                 .then(res => res.json())
                 .then(json => {
-                    if (!json || !json.data) throw new Error("無效的資料格式");
+                    if (!json || !json.data) throw new Error("無效資料");
+
                     var binaryString = atob(json.data);
                     var bytes = new Uint8Array(binaryString.length);
-                    for (var i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
-                    }
+                    for (var i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
 
                     var decoder = new TextDecoder('big5');
                     var csvText = decoder.decode(bytes);
@@ -705,22 +709,27 @@ function fetchData() {
                             var cols = lines[i].split('","');
                             var rawValue = cols[cols.length - 1].replace(/"/g, "").replace(/,/g, "").replace(/#/g, "").trim();
                             var shares = parseInt(rawValue);
+
                             if (!isNaN(shares)) {
                                 var lots = Math.round(shares / 1000);
-                                window.processInstitutionalResult({ netBuy: lots.toString(), date: dateStr });
+
+                                var result = {
+                                    netBuy: (lots !== undefined && lots !== null) ? lots.toString() : "0",
+                                    date: dateStr,
+                                    timestamp: now
+                                };
+                                localStorage.setItem(cacheKey, JSON.stringify(result));
+                                window.processInstitutionalResult(result);
                                 found = true;
                                 break;
                             }
                         }
                     }
-                    if (!found) window.processInstitutionalResult({ netBuy: "0", date: dateStr });
-                    var result = {
-                        netBuy: lots.toString(),
-                        date: dateStr,
-                        timestamp: now
-                    };
-                    localStorage.setItem(cacheKey, JSON.stringify(result));
-                    window.processInstitutionalResult(result);
+                    if (!found) {
+                        var noData = { netBuy: "0", date: dateStr, timestamp: now };
+                        localStorage.setItem(cacheKey, JSON.stringify(noData));
+                        window.processInstitutionalResult(noData);
+                    }
             })
             .catch(err => {
                 console.error("Fetch 失敗:", err);
