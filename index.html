@@ -830,28 +830,25 @@ function fetchData() {
 
         function loadInstitutionalData(symbol) {
 
-            var url = "https://corsproxy.io/?url=" + encodeURIComponent("https://www.twse.com.tw/fund/T86?response=csv&selectType=ALLBUT0999");
+            var url = "/api/proxy";
 
             fetch(url)
             .then(response => response.arrayBuffer())
             .then(buffer => {
                 var decoder = new TextDecoder('big5');
                 var csvText = decoder.decode(buffer);
-
                 var lines = csvText.split('\n');
-                if (lines.length < 2) return;
-                var dateStr = lines[0].replace(/"/g, "").replace("三大法人買賣超日報", "").trim();
 
+                var dateStr = lines[0].replace(/"/g, "").replace("三大法人買賣超日報", "").trim();
                 var found = false;
+
                 for (var i = 2; i < lines.length; i++) {
                     if (lines[i].indexOf('"' + symbol + '"') !== -1) {
                         var cols = lines[i].split('","');
                         var rawValue = cols[cols.length - 1].replace(/"/g, "").replace(/,/g, "").replace(/#/g, "").trim();
                         var shares = parseInt(rawValue);
-
                         if (!isNaN(shares)) {
                             var lots = Math.round(shares / 1000);
-
                             window.processInstitutionalResult({ netBuy: lots.toString(), date: dateStr });
                             found = true;
                             break;
