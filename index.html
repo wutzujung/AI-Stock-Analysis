@@ -531,8 +531,10 @@ function evalHoldingStrategy(cPrice, cLow, ma20, trendType) {
 }
 
 function fetchData() {
-            var symbolInput = document.getElementById("txtSymbol").value.replace(/^\s+|\s+$/g, '').toUpperCase().split('.')[0];
-            if (symbolInput === "") { alert("請輸入股票代號！"); return; }
+            var symbol = document.getElementById("txtSymbol").value;
+            var symbolInput = symbol;
+            if (!symbol) {
+                 alert("請輸入股票代號！"); return; }
             
             document.getElementById("lblCompanyName").innerText = "資料解析中...";
             document.getElementById("lblResult").innerHTML = "<div style='text-align:center;'><strong>透過專屬 GAS 隧道對接 Yahoo 中...</strong></div>";
@@ -655,7 +657,7 @@ function fetchData() {
                 var stockChangePercent = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
                 performMarketCorrelation(stockChangePercent, parseFloat(marketChangePercent).toFixed(2));
                 // === 新增：大盤關聯邏輯結束 ===
-                loadInstitutionalData(symbolInput);
+                window.loadInstitutionalData(symbol)
                 if (typeof processIndicators === 'function') {
                     processIndicators();
                 }
@@ -663,9 +665,41 @@ function fetchData() {
             .catch(err => {
                 console.error(err);
                 document.getElementById("lblResult").innerHTML = "<div style='color:#ef4444;'><strong>專屬通道資料解析異常</strong><br>請確認代號是否正確。</div>";
-            });
-            
+            });           
         }
+        window.loadInstitutionalData = function(symbol) {
+            var url = "https://corsproxy.io/?url=" + encodeURIComponent("https://www.twse.com.tw/fund/T86?response=csv&selectType=ALLBUT0999");
+                
+            fetch(url)
+                .then(response => response.arrayBuffer())
+                .then(buffer => {
+                    var decoder = new TextDecoder('big5');
+                    var csvText = decoder.decode(buffer);
+                    var lines = csvText.split('\n');
+
+                    var dateStr = lines[0] ? lines[0].replace(/"/g, "").replace("三大法人買賣超日報", "").trim() : "讀取失敗";
+
+                    var found = false;
+                    for (var i = 2; i < lines.length; i++) {
+                        if (lines[i].indexOf('"' + symbol + '"') !== -1) {
+                            var cols = lines[i].split('","');
+                            var rawValue = cols[cols.length - 1].replace(/"/g, "").replace(/,/g, "").replace(/#/g, "").trim();
+                            var shares = parseInt(rawValue);
+                            if (!isNaN(shares)) {
+                                var lots = Math.round(shares / 1000);
+                                window.processInstitutionalResult({ netBuy: lots.toString(), date: dateStr });
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) window.processInstitutionalResult({ netBuy: "0", date: dateStr });
+            })
+            .catch(err => {
+                console.error("Fetch 失敗:", err);
+                window.processInstitutionalResult({ netBuy: "Err", date: "網頁端讀取失敗" });
+            });   
+    };     
         function getMA(days) {
             var sum = 0;
             var startIdx = globalValidData.length - days;
@@ -828,40 +862,13 @@ function fetchData() {
             }
         }
 
-        function loadInstitutionalData(symbol) {
+        //function loadInstitutionalData(symbol) {
 
-            var url = "/api/proxy";
-
-            fetch(url)
-            .then(response => response.arrayBuffer())
-            .then(buffer => {
-                var decoder = new TextDecoder('big5');
-                var csvText = decoder.decode(buffer);
-                var lines = csvText.split('\n');
-
-                var dateStr = lines[0].replace(/"/g, "").replace("三大法人買賣超日報", "").trim();
-                var found = false;
-
-                for (var i = 2; i < lines.length; i++) {
-                    if (lines[i].indexOf('"' + symbol + '"') !== -1) {
-                        var cols = lines[i].split('","');
-                        var rawValue = cols[cols.length - 1].replace(/"/g, "").replace(/,/g, "").replace(/#/g, "").trim();
-                        var shares = parseInt(rawValue);
-                        if (!isNaN(shares)) {
-                            var lots = Math.round(shares / 1000);
-                            window.processInstitutionalResult({ netBuy: lots.toString(), date: dateStr });
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-                if (!found) window.processInstitutionalResult({ netBuy: "0", date: dateStr });
-            })
-            .catch(err => {
-                console.error("Fetch Error:", err);
-                window.processInstitutionalResult({ netBuy: "Err", date: "讀取失敗" });
-            });
-        }
+            //var url = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
+            //var script = document.createElement('script');
+            //script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
+            //document.body.appendChild(script);
+        //}
         
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = function(data) {
