@@ -668,13 +668,24 @@ function fetchData() {
             });           
         }
         window.loadInstitutionalData = function(symbol) {
+            var cacheKey = "fund_cache_" + symbol;
+            var cachedData = localStorage.getItem(cacheKey);
+            var now = new Date().getTime();
+            var TWELVE_MINUTES = 30 * 60 * 1000;
+
+            if (cachedData) {
+                var parsed = JSON.parse(cachedData);
+                if ((now - parsed.timestamp) < TWELVE_MINUTES) {
+                    console.log("從快取讀取籌碼 (30分內):", parsed);
+                    window.processInstitutionalResult(parsed);
+                    return;
+                }
+            }
+
             var url = "/api/getdata";
                 
             fetch(url)
-                .then(response => {
-                    if (!response.ok) throw new Error("API 伺服器回應錯誤");
-                    return response.json();
-                })
+                .then(res => res.json())
                 .then(json => {
                     if (!json || !json.data) throw new Error("無效的資料格式");
                     var binaryString = atob(json.data);
@@ -703,6 +714,13 @@ function fetchData() {
                         }
                     }
                     if (!found) window.processInstitutionalResult({ netBuy: "0", date: dateStr });
+                    var result = {
+                        netBuy: lots.toString(),
+                        date: dateStr,
+                        timestamp: now
+                    };
+                    localStorage.setItem(cacheKey, JSON.stringify(result));
+                    window.processInstitutionalResult(result);
             })
             .catch(err => {
                 console.error("Fetch 失敗:", err);
