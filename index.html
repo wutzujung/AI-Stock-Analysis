@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>波段突破自動監控系統 (AI演算+題材筆記版) V11</title>
+    <title>波段突破自動監控系統 (AI演算+題材筆記版) V14</title>
     
     <style>
         :root { --base-font-size: 14px; --chart-height: 190px; }
         body { font-family: 'Microsoft JhengHei', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: #f4f6f9; color: #2c3e50; margin: 0; padding: 8px; font-size: var(--base-font-size); transition: font-size 0.2s; -webkit-text-size-adjust: 100%; }
-        .container { background-color: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); box-sizing: border-box; width: 100%; max-width: 600px; margin: 0 auto; }
+        .container { background-color: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); box-sizing: border-box; width: 100%; max-width: 600px; margin: 0 auto; width: 100%; display: flex; flex-direction: column;}
         h2 { text-align: center; color: #1a252f; margin-top: 0; margin-bottom: 12px; font-size: 1.25em; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px; }
         
         .toolbar { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; background: #fdfdfd; padding: 8px; border-radius: 8px; border: 1px solid #eaeaea; }
@@ -42,8 +42,8 @@
         .company-header span.label { font-size: 0.95em; color: #64748b; }
         .company-header span.name { font-size: 1.35em; font-weight: bold; color: #dc2626; margin-left: 6px; }
         
-        .info-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
-        .holding-info-box { background-color: #fffaf0; border: 1px solid #feebc8; padding: 12px; border-radius: 6px; border-left: 5px solid #dd6b20; display: none; }
+        .info-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; width: 100%; margin-bottom: 10px; }
+        .holding-info-box { background-color: #fffaf0; border: 1px solid #feebc8; padding: 12px; border-radius: 6px; border-left: 5px solid #dd6b20; width: 100%; box-sizing: border-box;}
         .auto-info-box { background-color: #fffbfa; border: 1px solid #fed7aa; padding: 10px; border-radius: 6px; border-left: 4px solid #f97316;}
         .ai-info-box { background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 10px; border-radius: 6px; border-left: 4px solid #a855f7;}
         .predict-info-box { background-color: #f0f9ff; border: 1px solid #bae6fd; padding: 10px; border-radius: 6px; border-left: 4px solid #0284c7;}
@@ -74,10 +74,26 @@
         ul.analysis-list li { margin-bottom: 4px; }
         .badge { padding: 2px 4px; border-radius: 4px; font-size: 0.8em; color: white; margin-right: 4px; font-weight: bold; }
         .bg-red { background-color: #ef4444; } .bg-green { background-color: #22c55e; } .bg-gray { background-color: #64748b; }
+        .analysis-list { list-style: none; padding: 0; margin: 10px 0; }
+        .analysis-list li { margin-bottom: 8px; }
+        #institutionalWrapper {
+            width: 100% !important;
+            float: none !important;
+        }
+
+        #institutionalBox {
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-left: 4px solid #2563eb;
+            display: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
     </style>
 
     <script type="text/javascript">
         var GOOGLE_PROXY_URL = "https://script.google.com/macros/s/AKfycby00Dd0d7v39qBwmqr6wxPHsUiRp69B6v-AoBTj9XTbqytQZBU7MlZYlNdU30pw7F3G/exec"; 
+        var INSTITUTIONAL_URL = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
         
         var myWatchlist = [];
         var globalValidData = [];
@@ -505,6 +521,9 @@ function evalHoldingStrategy(cPrice, cLow, ma20, trendType) {
             actionText = "👉 <strong>建議：【暫時續抱】</strong>以月線(" + ma20.toFixed(1) + ")作為最後防守點。";
         }
     }
+    if(isProfit && returnRate >= 10.0) {
+        actionText += "<br><span style='color:#d97706; font-weight:bold;'>✨ 已達標 10% 獲利目標，建議檢查是否分批入袋。</span>";      
+    }
     
     box.innerHTML = "<div class='auto-info-title' style='color:" + color + ";'>" + titleText + "</div><p style='margin:6px 0;'>" + actionText + "</p>";
     box.style.borderLeftColor = color;
@@ -634,17 +653,18 @@ function fetchData() {
                 var todayClose = quotes.close[quotes.close.length - 1];
                 var yesterdayClose = quotes.close[quotes.close.length - 2];
                 var stockChangePercent = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
-
-                // 呼叫分析並顯示 (假設目前大盤為 -1.13%，您可以自行調整該數值)
                 performMarketCorrelation(stockChangePercent, parseFloat(marketChangePercent).toFixed(2));
-
-                processIndicators();
                 // === 新增：大盤關聯邏輯結束 ===
+                loadInstitutionalData(symbolInput);
+                if (typeof processIndicators === 'function') {
+                    processIndicators();
+                }
             })
             .catch(err => {
                 console.error(err);
                 document.getElementById("lblResult").innerHTML = "<div style='color:#ef4444;'><strong>專屬通道資料解析異常</strong><br>請確認代號是否正確。</div>";
             });
+            
         }
         function getMA(days) {
             var sum = 0;
@@ -654,11 +674,16 @@ function fetchData() {
         }
 
         function processIndicators() {
-            var dataLen = globalValidData.length; var currentData = globalValidData[dataLen - 1];
-            var cPrice = currentData.close; var cOpen = currentData.open; var cHigh = currentData.high; var cLow = currentData.low;
+            var dataLen = globalValidData.length; 
+            var currentData = globalValidData[dataLen - 1];
+            var cPrice = currentData.close; 
+            var cOpen = currentData.open; 
+            var cHigh = currentData.high; 
+            var cLow = currentData.low;
             var actualVol = Math.floor(currentData.vol / 1000);
-            var ma5 = getMA(5); var ma20 = getMA(20);
-            
+            var ma5 = getMA(5); 
+            var ma20 = getMA(20);
+
             var now = new Date(); var h = now.getHours(); var m = now.getMinutes();
             var isTrading = (h === 9 && m >= 0) || (h > 9 && h < 13) || (h === 13 && m <= 30);
             var elapsedMins = (h - 9) * 60 + m; var estVol = actualVol; var volLabel = "今日實量";
@@ -670,27 +695,47 @@ function fetchData() {
             var avgVol = Math.floor((sumVol5 / 5) / 1000);
             var maxHigh20 = 0; for(var k = dataLen - 2; k >= dataLen - 21; k--) { if(globalValidData[k] && globalValidData[k].high > maxHigh20) maxHigh20 = globalValidData[k].high; }
 
-            document.getElementById("txtPrice").value = cPrice.toFixed(2); document.getElementById("txtOpen").value = cOpen.toFixed(2);
-            document.getElementById("txtLow").value = cLow.toFixed(2); document.getElementById("lblVolType").innerText = volLabel + "：";
-            document.getElementById("txtVol").value = estVol; document.getElementById("txtAvgVol").value = avgVol;
+            document.getElementById("txtPrice").value = cPrice.toFixed(2); 
+            document.getElementById("txtOpen").value = cOpen.toFixed(2);
+            document.getElementById("txtLow").value = cLow.toFixed(2); 
+            document.getElementById("lblVolType").innerText = volLabel + "：";
+            document.getElementById("txtVol").value = estVol; 
+            document.getElementById("txtAvgVol").value = avgVol;
             document.getElementById("txtHighPrice").value = maxHigh20 > 0 ? maxHigh20.toFixed(2) : cHigh.toFixed(2); 
             document.getElementById("txtMA20").value = ma20.toFixed(2);
             
             var volRatio = (avgVol > 0) ? (estVol / avgVol).toFixed(1) : 0;
-            var isBreakout = (cPrice >= maxHigh20); var isRedCandle = (cPrice >= cOpen);
-            var isBullish = (ma5 > ma20 && cPrice > ma5); var isBearish = (cPrice < ma20);
+            var isBreakout = (cPrice >= maxHigh20); 
+            var isRedCandle = (cPrice >= cOpen);
+            var isBullish = (ma5 > ma20 && cPrice > ma5); 
+            var isBearish = (cPrice < ma20);
             var volLevelText = (volRatio < 1.2) ? "量縮整理" : ((volRatio < 2.0) ? "溫和放量" : "攻擊爆量");
-            var borderColor = "#cbd5e1"; var summaryTitle = "";
+            var borderColor = "#cbd5e1"; 
+            var summaryTitle = "";
             
             if (isBreakout && volRatio >= 1.8) { borderColor = "#dc2626"; summaryTitle = "🎯 強勢帶量過高突破 (波段起漲點)"; } 
             else if (volRatio >= 2.0 && !isBreakout) { borderColor = "#2563eb"; summaryTitle = "👀 底部異動：爆量結構醞釀中"; } 
-            else if (isBreakout && volRatio < 1.8) { borderColor = "#7c3aed"; summaryTitle = "🛑 無量過高假突破 (高檔誘多)"; } 
+            else if (isBreakout && volRatio < 1.0) { borderColor = "#7c3aed"; summaryTitle = "⚠️ 嚴重量價背離 (高檔無量誘多)"; } 
+            else if (isBreakout && volRatio < 1.8) { borderColor = "#7c3aed"; summaryTitle = "🛑 無量過高假突破"; }
             else { borderColor = "#475569"; summaryTitle = "☕ 縮量常態盤整區間"; }
 
             var analysisHTML = "<div class='result-title' style='color:" + borderColor + ";'>" + summaryTitle + "</div>";
-            analysisHTML += "<ul class='analysis-list'><li><strong>技術指標：</strong> " + (isBullish ? "<span class='badge bg-red'>多頭排列</span>" : (isBearish ? "<span class='badge bg-green'>破線轉弱</span>" : "<span class='badge bg-gray'>結構盤整</span>")) + " " + (isRedCandle ? "<span class='badge bg-red'>紅K線</span>" : "<span class='badge bg-green'>黑K線</span>") + "</li>";
-            analysisHTML += "<li><strong>量能狀況：</strong> " + volLevelText + " (" + volRatio + "倍均量)。<span class='tip-tag' onclick='showTip(\"vol\")'>這是啥?</span></li></ul>";
+            analysisHTML += "<ul class='analysis-list'>";
+            analysisHTML += "<li><strong>技術指標：</strong> " + (isBullish ? "<span class='badge bg-red'>多頭排列</span>" : (isBearish ? "<span class='badge bg-green'>破線轉弱</span>" : "<span class='badge bg-gray'>結構盤整</span>")) + " " + (isRedCandle ? "<span class='badge bg-red'>紅K線</span>" : "<span class='badge bg-green'>黑K線</span>") + "</li>";
+            analysisHTML += "<li><strong>量能狀況：</strong> " + volLevelText + " (" + volRatio + "倍均量)。<span class='tip-tag' onclick='showTip(\"vol\")'>這是啥?</span></li>";
 
+            var bias = ((cPrice - ma20) / ma20) * 100;
+            if (bias > 12) {
+                analysisHTML += "<li><span class='badge bg-red'>🚨 警示：乖離過大 (+" + bias.toFixed(1) + "%)，短線獲利賣壓強！</span></li>";
+            } else if (bias < -10) {
+                analysisHTML += "<li><span class='badge bg-green'>✨ 機會：乖離過大 (" + bias.toFixed(1) + "%)，留意反彈機會！</span></li>";
+            } 
+
+            if (isBreakout && volRatio < 1.0) {
+                analysisHTML += "<li><strong style='color:#e53e3e;'>⚠️ 量價背離：</strong>無量創新高，主力誘多風險高！</li>";
+            }
+
+            analysisHTML += "</ul>";
             document.getElementById("lblResult").innerHTML = analysisHTML;
             document.getElementById("resultContainer").style.borderLeftColor = borderColor;
             
@@ -718,6 +763,7 @@ function fetchData() {
 
             // 執行持股策略評估
             evalHoldingStrategy(cPrice, cLow, ma20, trendType);
+
         }
         // 大盤聯動分析邏輯
         function performMarketCorrelation(stockChangePercent, marketChange) {
@@ -764,8 +810,12 @@ function fetchData() {
 
                 console.log("收到的日期格式:", data.expiryDate);
 
+                const nameEl = document.getElementById("lblCompanyName");
+
                 if (data && data.isDisposition === true) {
-                    const nameEl = document.getElementById("lblCompanyName");
+                    nameEl.innerHTML += ` <div style="font-size:0.8em; color:#991b1b; margin-top:4px;">
+                    ⚠️ 處置期間流動性縮減，請務必使用「限價單」交易！
+                    </div>`;
 
                     if (!nameEl.innerHTML.includes("處置中")) {
                         nameEl.innerHTML += ` <span style="color:white; background:red; padding:1px 6px; border-radius:4px; font-size:12px; margin-left:8px; font-weight:bold;">
@@ -777,11 +827,83 @@ function fetchData() {
                 console.error("查詢失敗:", e);
             }
         }
+
+        function loadInstitutionalData(symbol) {
+
+            var url = "https://corsproxy.io/?url=" + encodeURIComponent("https://www.twse.com.tw/fund/T86?response=csv&selectType=ALLBUT0999");
+
+            fetch(url)
+            .then(response => response.arrayBuffer())
+            .then(buffer => {
+                var decoder = new TextDecoder('big5');
+                var csvText = decoder.decode(buffer);
+
+                var lines = csvText.split('\n');
+                if (lines.length < 2) return;
+                var dateStr = lines[0].replace(/"/g, "").replace("三大法人買賣超日報", "").trim();
+
+                var found = false;
+                for (var i = 2; i < lines.length; i++) {
+                    if (lines[i].indexOf('"' + symbol + '"') !== -1) {
+                        var cols = lines[i].split('","');
+                        var rawValue = cols[cols.length - 1].replace(/"/g, "").replace(/,/g, "").replace(/#/g, "").trim();
+                        var shares = parseInt(rawValue);
+
+                        if (!isNaN(shares)) {
+                            var lots = Math.round(shares / 1000);
+
+                            window.processInstitutionalResult({ netBuy: lots.toString(), date: dateStr });
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found) window.processInstitutionalResult({ netBuy: "0", date: dateStr });
+            })
+            .catch(err => {
+                console.error("Fetch Error:", err);
+                window.processInstitutionalResult({ netBuy: "Err", date: "讀取失敗" });
+            });
+        }
+        
+        // 這是全域函式，確保能被 JSONP 呼叫到
+        window.processInstitutionalResult = function(data) {
+            console.log("=== 籌碼數據接收成功 ===", data);
+            var content = document.getElementById("institutionalContent");
+
+            var box = document.getElementById("institutionalBox");
+
+            if (content && box) {
+                var rawVal = data.netBuy || "0";
+                var dateText = data.date || "";
+
+                var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
+
+                content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
+                box.style.display = "block";
+            }  
+        };
+
+        window.handleInstitutionalData = function(data) {
+            console.log("=== JSONP 接收成功 ===", data);
+            var content = document.getElementById("institutionalContent");
+            var box = document.getElementById("institutionalBox");
+
+            if (content && box) {
+                var val = data.netBuy || 0;
+                var text = (val === 0 || val === "0") ? "無買賣超" : val + " 張";
+                content.innerHTML = "外資今日買賣超：" + text;
+                box.style.display = "block";
+            }
+ 
+        }
+
     </script>
 </head>
 <body>
     <div class="container">
-        <h2>波段突破自動監控系統 (AI演算+題材筆記版) V11</h2>
+        <h2>波段突破自動監控系統 (AI演算+外資籌碼分析) V14</h2>
+
 
         
         <div class="toolbar">
@@ -828,9 +950,21 @@ function fetchData() {
             <span id="lblCompanyName" class="name">等待抓取...</span>
         </div>
 
+
         <div class="info-grid">
-            <div id="holdingStrategyBox" class="holding-info-box"></div>
+            <div id="holdingStrategyBox" class="holding-info-box">
+        </div>
             
+        <div class="next-section-container" style="clear: both; width: 100%; margin-top: 20px;">
+            </div>
+
+        <div id="institutionalWrapper" style="width: 100%; margin-bottom: 10px;">
+            <div id="institutionalBox" class="holding-info-box" style="display:none; border-left: 4px solid #2563eb; width: 100%; box-sizing: border-box;">
+                <div class="auto-info-title" style="color: #2563eb;">💰 三大法人籌碼追蹤</div>
+                <div id="institutionalContent" class="moat-text" style="margin:6px 0;">讀取籌碼中...</div>
+            </div>
+        </div>
+
         <div id="market-status" style="background: #eef2f7; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; border: 1px solid #d1d9e6; text-align: center;">
             大盤：<span id="marketIndex">讀取中...</span> |
             聯動診斷：<span id="marketTrend" style="font-weight: bold; color: #2980b9;">分析中...</span>
