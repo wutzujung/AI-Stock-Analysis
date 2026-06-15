@@ -719,6 +719,9 @@ function fetchData() {
                                     timestamp: now
                                 };
                                 localStorage.setItem(cacheKey, JSON.stringify(result));
+
+                                saveToSheet(symbol, result.netBuy, result.date);
+
                                 window.processInstitutionalResult(result);
                                 found = true;
                                 break;
@@ -728,6 +731,9 @@ function fetchData() {
                     if (!found) {
                         var noData = { netBuy: "0", date: dateStr, timestamp: now };
                         localStorage.setItem(cacheKey, JSON.stringify(noData));
+
+                        saveToSheet(symbol, noData.netBuy, noData.date);
+
                         window.processInstitutionalResult(noData);
                     }
             })
@@ -736,6 +742,23 @@ function fetchData() {
                 window.processInstitutionalResult({ netBuy: "Err", date: "網頁端讀取失敗" });
             });   
     };     
+        function saveToSheet(symbol, netBuy, date) {
+        // 【重要】請將下方網址替換成你部署 GAS 後得到的 Web App URL
+        var scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec"; 
+    
+        fetch(scriptUrl, {
+            method: "POST",
+            mode: "no-cors", 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                symbol: symbol, 
+                netBuy: netBuy, 
+                date: date 
+            })
+        }).then(() => console.log("籌碼已成功同步至 Google Sheet"))
+          .catch(err => console.error("寫入 Sheet 失敗:", err));
+    }
+
         function getMA(days) {
             var sum = 0;
             var startIdx = globalValidData.length - days;
