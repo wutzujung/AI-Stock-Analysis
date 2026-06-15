@@ -668,18 +668,22 @@ function fetchData() {
             });           
         }
         window.loadInstitutionalData = function(symbol) {
-            var targetUrl = "https://www.twse.com.tw/fund/T86?response=csv&selectType=ALLBUT0999";
-            var url = "https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl);
+            var url = "/api/getdata";
                 
             fetch(url)
                 .then(response => response.arrayBuffer())
                 .then(buffer => {
+                    var binaryString = atob(json.data);
+                    var bytes = new Uint8Array(binaryString.length);
+                    for (var i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+
                     var decoder = new TextDecoder('big5');
-                    var csvText = decoder.decode(buffer);
+                    var csvText = decoder.decode(bytes);
                     var lines = csvText.split('\n');
 
                     var dateStr = lines[0] ? lines[0].replace(/"/g, "").replace("三大法人買賣超日報", "").trim() : "讀取失敗";
-
                     var found = false;
                     for (var i = 2; i < lines.length; i++) {
                         if (lines[i].indexOf('"' + symbol + '"') !== -1) {
