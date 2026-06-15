@@ -668,7 +668,8 @@ function fetchData() {
             });           
         }
         window.loadInstitutionalData = function(symbol) {
-            var url = "https://corsproxy.io/?url=" + encodeURIComponent("https://www.twse.com.tw/fund/T86?response=csv&selectType=ALLBUT0999");
+            var targetUrl = "https://www.twse.com.tw/fund/T86?response=csv&selectType=ALLBUT0999";
+            var url = "https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl);
                 
             fetch(url)
                 .then(response => response.arrayBuffer())
