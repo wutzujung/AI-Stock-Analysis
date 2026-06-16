@@ -966,18 +966,25 @@ function fetchData() {
           try {
             const response = await fetch(url);
             const data = await response.json();
-    
-            // 渲染到網頁上 (假設你有一個 <div id="stock-list">)
-            const listDiv = document.getElementById('stock-list');
-            listDiv.innerHTML = ''; // 清空舊資料
-    
-            data.forEach(item => {
-              const p = document.createElement('p');
-              p.innerText = `日期: ${item.date} | 買賣超: ${item.netBuy}`;
-              listDiv.appendChild(p);
-            });
+
+            if (data.status === "error") return;
+
+            const labels = data.map(item => item.date);
+            const netBuyData = data.map(item => parseFloat(item.netBuy));
+
+            if (typeof priceChart !== 'undefined') {
+                priceChart.data.labels = labels;
+                priceChart.data.datasets.push({
+                    label: '歷史買賣超',
+                    data: netBuyData,
+                    type: 'bar', // 以長條圖顯示籌碼
+                    backgroundColor: netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e'),
+                    yAxisID: 'y1' // 需要確保圖表有設定對應的 y 軸
+                });
+                priceChart.update(); // 刷新圖表
+            }
           } catch (err) {
-            console.error("資料讀取失敗", err);
+            console.error("更新圖表失敗", err);
           }
         }
 
