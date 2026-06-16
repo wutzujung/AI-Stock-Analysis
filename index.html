@@ -942,16 +942,14 @@ function fetchData() {
 
                 var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
 
-                box.style.border = "2px solid red";
-                box.style.display = "block";
-                box.style.height = "auto";
-                box.style.minHeight = "40px";
-                
                 content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
                 box.style.display = "block";
-                box.style.visibility = "visible";
+                box.style.backgroundColor = "transparent";
+                box.style.border = "none";
+                box.style.padding = "10px";
+                box.style.margin = "10px 0";
                 box.style.opacity = "1";
-                console.log("UI 更新完成，區塊狀態:", box.style.display);
+                console.log("UI 已恢復正常顯示");
             } else {
                 console.error("找不到 institutionalBox 或 content 元素");
             }  
