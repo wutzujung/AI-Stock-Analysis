@@ -950,6 +950,12 @@ function fetchData() {
             } else {
                 console.error("找不到 institutionalBox 或 content 元素");
             }  
+            var box = document.getElementById("institutionalBox");
+            box.style.display = "block";
+            box.style.opacity = "1";
+            box.style.visibility = "visible";
+            box.style.position = "relative"; // 確保不會因為定位跑掉被蓋住
+            box.style.zIndex = "9999";       // 確保它浮在最上層
         };
 
         window.handleInstitutionalData = function(data) {
