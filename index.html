@@ -944,6 +944,11 @@ function fetchData() {
 
                 content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
                 box.style.display = "block";
+                box.style.visibility = "visible";
+                box.style.opacity = "1";
+                console.log("UI 更新完成，區塊狀態:", box.style.display);
+            } else {
+                console.error("找不到 institutionalBox 或 content 元素");
             }  
         };
 
