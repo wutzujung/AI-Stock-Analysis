@@ -942,6 +942,11 @@ function fetchData() {
 
                 var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
 
+                box.style.border = "2px solid red";
+                box.style.display = "block";
+                box.style.height = "auto";
+                box.style.minHeight = "40px";
+                
                 content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
                 box.style.display = "block";
                 box.style.visibility = "visible";
