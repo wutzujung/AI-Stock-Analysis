@@ -960,6 +960,35 @@ function fetchData() {
             }
  
         }
+        // 你的 GAS 部署網址 (請填入你後台看到的那個網址)
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec'; 
+
+        async function fetchData(symbol) {
+            try {
+                // 1. 發送 GET 請求給 GAS
+                const response = await fetch(`${GAS_URL}?symbol=${symbol}`);
+                const data = await response.json(); // 取得 JSON 資料
+
+                // 2. 抓取 HTML 表格主體
+                const tbody = document.querySelector('#stock-table tbody');
+                tbody.innerHTML = ''; // 清空原本的內容
+
+                // 3. 將資料填入表格
+                data.forEach(item => {
+                    const row = `<tr>
+                        <td>${item.date}</td>
+                        <td>${item.netBuy}</td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+
+            } catch (error) {
+                console.error("讀取失敗:", error);
+            }
+        }
+
+// 呼叫方式 (當畫面載入時自動執行，或在按下按鈕後執行)
+fetchData('6116');
 
     </script>
 </head>
