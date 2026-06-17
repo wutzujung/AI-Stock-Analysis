@@ -175,15 +175,17 @@
                 console.error("籌碼圖初始化失敗:", e);
             }
         }
-            function updateChart(chartObj, labels, data) {
-                if (chartObj && chartObj.data && chartObj.data.datasets.length > 0) {
-                    chartObj.data.labels = labels;
-                    chartObj.data.datasets[0].data = data;
-                    chartObj.update(); // 執行更新
-                    console.log(`圖表 ${chartObj.canvas.id} 已完成數據更新`);
-                } else {
-                    console.error("找不到對應的圖表物件或 datasets 未初始化。");
-                }
+            function updateChipsChart(labels, dataArray) {
+                if (!window.chipsChart) return;
+
+                const colors = dataArray.map(value => value >= 0 ? 'rgba(255, 99, 132, 0.6)' : 'rgba(75, 192, 192, 0.6)');
+
+                window.chipsChart.data.labels = labels;
+                window.chipsChart.data.datasets[0].data = dataArray;
+                window.chipsChart.data.datasets[0].backgroundColor = colors;
+
+                window.chipsChart.update();
+                console.log("法人籌碼圖已更新，共 " + dataArray.length + " 筆數據");
             }
 
             // 2. 確保頁面載入後自動呼叫初始化
@@ -684,10 +686,9 @@ function fetchData() {
                         window.priceChart.update();
                         console.log("股價圖表已更新");
                     }
-                    loadStockData(symbolInput);
-
-                    console.log("籌碼資料尚未同步，跳過籌碼圖更新");
-
+                    loadStockData(symbolInput).then(() => {
+                        console.log("籌碼資料已成功抓取並同步更新圖表");
+                    });
                 } else {
                     console.error("資料解析後為空");
                 }
