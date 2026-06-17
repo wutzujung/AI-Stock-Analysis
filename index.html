@@ -1021,12 +1021,13 @@ function fetchData() {
                 const data = await response.json();
 
                 console.log("從伺服器收到的原始資料:", data);
-
+               
                 if (!Array.isArray(data) || data.length === 0) {
                     console.warn("未收到有效的籌碼歷史陣列");
                     return;
                 }
 
+                const validData = data.filter(item => item.date && item.date.trim() !== "" && item.netBuy !== "");
                 const historyData = data.slice(-20);
                 const labels = historyData.map(item => item.date);
                 const netBuyData = historyData.map(item => parseFloat(item.netBuy));
