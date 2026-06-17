@@ -112,26 +112,38 @@
 
         // 1. 初始化圖表的函數
         function initChart() {
-            console.log("圖表初始化開始...");
-            var ctx = document.getElementById('priceChart').getContext('2d');
-
-            // 修正：修正巢狀結構，將 options 移到正確位置
-            window.priceChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: '股價走勢',
-                        data: [],
-                        borderColor: '#2563eb',
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
+            try {  
+                var canvas = document.getElementById('priceChart');
+                if (!canvas) {
+                    console.error("找不到 ID 為 priceChart 的 canvas 元素！");
+                    return;
                 }
-            });
+
+                var ctx = canvas.getContext('2d');
+
+                console.log("嘗試初始化圖表...");
+
+                // 修正：修正巢狀結構，將 options 移到正確位置
+                window.priceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '股價走勢',
+                            data: [],
+                            borderColor: '#2563eb',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                console.log("圖表初始化成功！");
+            } catch (e) {
+                console.error("圖表初始化失敗，原因：", e);
+            }
         }
 
             function updateChart(labels, data) {
