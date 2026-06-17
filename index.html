@@ -690,6 +690,7 @@ function fetchData() {
                 for(var i = 0; i < quotes.close.length; i++){
                     if(quotes.close[i] !== null) {
                         globalValidData.push({ 
+                            date: quotes.timestamp ? new Date(quotes.timestamp[i] * 1000).toLocaleDateString() : i,
                             open: quotes.open ? quotes.open[i] : 0,
                             high: quotes.high ? quotes.high[i] : 0,
                             low: quotes.low ? quotes.low[i] : 0,
@@ -700,6 +701,12 @@ function fetchData() {
                 }
                 if(globalValidData.length > 0) {
                     console.log("資料已就緒，準備繪圖，共", globalValidData.length, "筆");
+                    if (window.priceChart) {
+                        window.priceChart.data.labels = globalValidData.map(d => d.date);
+                        window.priceChart.data.datasets[0].data = globalValidData.map(d => d.close);
+                        window.priceChart.update();
+                        console.log("圖表數據已更新");
+                    }
                     drawChart(); // 直接呼叫，不要透過 requestAnimationFrame 測試看看
                 } else {
                     console.error("資料解析後為空");
@@ -708,7 +715,6 @@ function fetchData() {
                     throw new Error("天數不足"); 
                 }
                 
-                window.requestAnimationFrame(drawChart);
                 // === 新增：大盤關聯邏輯開始 ===
                 var todayClose = quotes.close[quotes.close.length - 1];
                 var yesterdayClose = quotes.close[quotes.close.length - 2];
