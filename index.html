@@ -5,6 +5,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>波段突破自動監控系統 (AI演算+題材筆記版) V14</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         :root { --base-font-size: 14px; --chart-height: 190px; }
@@ -107,6 +109,42 @@
             "2382": "【一線雲端 CSP 核心夥伴】\n廣達電腦。與 Google、Microsoft 等北美大廠結盟深厚，高階 AI 伺服器整櫃出貨與調校經驗傲視全球，獲利能力高於同業。",
             "3231": "【AI 伺服器基板霸主】\n緯創資通。率先卡位 NVIDIA GPU 基板 主要供應份額，毛利率受惠於 AI 高毛利產品比重拉高而大幅結構性轉型。"
         };
+
+        // 1. 初始化圖表的函數
+        function initChart() {
+            var ctx = document.getElementById('priceChart').getContext('2d');
+
+            // 修正：修正巢狀結構，將 options 移到正確位置
+            window.priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '股價走勢',
+                        data: [],
+                        borderColor: '#2563eb',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+            function updateChart(labels, data) {
+                if (window.priceChart) {
+                    window.priceChart.data.labels = labels;
+                    window.priceChart.data.datasets[0].data = data;
+                    window.priceChart.update();
+                }
+            }
+
+            // 2. 確保頁面載入後自動呼叫初始化
+            document.addEventListener('DOMContentLoaded', function() {
+                initChart();
+            });
 
         window.onload = function() { initWatchlist(); applySettings(); };
 
