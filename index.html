@@ -679,9 +679,10 @@ function fetchData() {
                         console.log("圖表已透過 Chart.js 更新");
                     }
                     if (window.chipsChart) {
-                        window.chipsChart.data.labels = chipDates;
-                        window.chipsChart.data.datasets[0].data = chipValues;
+                        window.chipsChart.data.labels = [chipData.date];
+                        window.chipsChart.data.datasets[0].data = [parseInt(chipData.netBuy)];
                         window.chipsChart.update();
+                        console.log("籌碼圖數據已更新");
                     }
                 
                 } else {
@@ -1149,7 +1150,7 @@ function fetchData() {
         <div class="chart-container">
             <canvas id="chipsChart"></canvas>
         </div>
-        
+
         <div class="grid-layout">
             <div class="input-group">
                 <label>當前股價：</label>
