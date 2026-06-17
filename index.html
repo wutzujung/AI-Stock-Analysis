@@ -60,7 +60,7 @@
         .themes-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;}
         .theme-badge { background: #3b82f6; color: #fff; padding: 3px 6px; border-radius: 8px; font-size: 0.8em; font-weight: bold; }
         
-        .chart-container { margin-top: 10px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 8px; text-align: center; overflow: hidden; }
+        .chart-container { position: relative; margin-top: 10px; width: 100%; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 8px; text-align: center; overflow: hidden; min-height: 200px !important; display: block !important;}
         canvas { max-width: 100%; height: var(--chart-height); width: 100%; }
         
         .grid-layout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
@@ -127,6 +127,7 @@
         }
 
         function changeChartSize(step) {
+            console.log("當前繪製資料筆數:", globalValidData.length);
             currentChartHeight += step;
             if(currentChartHeight < 120) currentChartHeight = 120;
             if(currentChartHeight > 400) currentChartHeight = 400;
@@ -645,6 +646,12 @@ function fetchData() {
                             vol: quotes.volume ? quotes.volume[i] : 0
                         });
                     }
+                }
+                if(globalValidData.length > 0) {
+                    console.log("資料已就緒，準備繪圖，共", globalValidData.length, "筆");
+                    drawChart(); // 直接呼叫，不要透過 requestAnimationFrame 測試看看
+                } else {
+                    console.error("資料解析後為空");
                 }
                 if(globalValidData.length < 5) { 
                     throw new Error("天數不足"); 
