@@ -1029,7 +1029,7 @@ function fetchData() {
                 }
 
                 const validData = data.filter(item => item.date && item.date.trim() !== "" && item.netBuy !== "");
-                const historyData = data.slice(-20);
+                const historyData = validData.slice(-20);
                 const labels = historyData.map(item => item.date);
                 const netBuyData = historyData.map(item => parseFloat(item.netBuy));
 
