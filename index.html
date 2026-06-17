@@ -985,21 +985,23 @@ function fetchData() {
 
                 //content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
                 content.innerHTML = `
-                    <div style="font-size: 15px; color: #1f2937; padding: 5px 0;">
-                        外資籌碼 (${dateText})：
-                        <span style="color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'}; font-weight: bold;">
+                    <div style="font-size: 15px; color: #1f2937; margin: 0; padding: 0;">
+                        <div style="margin: 0; padding: 0;">
+                            外資籌碼 (${dateText})：
+                        </div>
+                        <div style="margin: 0; padding: 0; font-size: 18px; font-weight: bold; color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'};">
                             ${displayVal}
-                        </span>
+                        </div>
                     </div>
                 `;
                 box.style.display = "block";
                 box.style.backgroundColor = "#f9fafb";
                 box.style.border = "1px solid #e5e7eb";
                 box.style.borderRadius = "8px";
-                box.style.padding = "5px 15px"; // 垂直 padding 縮小到 5px
+                box.style.padding = "10px 15px 10px 15px"; // 上、右、下、左 (下邊距設為 10px 即可，若覺得太大可改 5px)
                 box.style.margin = "10px 0";
-                box.style.opacity = "1";
-                console.log("UI 已恢復正常顯示");
+                //box.style.opacity = "1";
+                //console.log("UI 已恢復正常顯示");
             } else {
                 console.error("找不到 institutionalBox 或 content 元素");
             }  
