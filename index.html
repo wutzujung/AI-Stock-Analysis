@@ -998,10 +998,10 @@ function fetchData() {
 
                 //content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
                 content.innerHTML = `
-                    <div style="font-weight: bold; color: #374151; margin-bottom: 8px; font-size: 16px;">
+                    <div style="font-weight: bold; color: #374151; margin-bottom: 4px;">
                         💰 三大法人籌碼追蹤
                     </div>
-                    <div style="font-size: 15px; color: #1f2937;">
+                    <div>
                         外資籌碼 (${dateText})：
                         <span style="color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'}; font-weight: bold;">
                             ${displayVal}
@@ -1009,9 +1009,10 @@ function fetchData() {
                     </div>
                 `;
                 box.style.display = "block";
-                box.style.backgroundColor = "transparent";
-                box.style.border = "none";
-                box.style.padding = "10px";
+                box.style.backgroundColor = "#f9fafb";
+                box.style.border = "1px solid #e5e7eb";
+                box.style.borderRadius = "8px";
+                box.style.padding = "10px 15px"; // 上下內距變小，這樣就不會那麼空了
                 box.style.margin = "10px 0";
                 box.style.opacity = "1";
                 console.log("UI 已恢復正常顯示");
