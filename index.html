@@ -972,18 +972,15 @@ function fetchData() {
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = function(data) {
             var content = document.getElementById("institutionalContent");
-            if (content) {
+            var box = document.getElementById("institutionalBox");
+            if (content && box) {
                 var rawVal = data.netBuy || "0";
                 var dateText = data.date || "";
                 var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
 
                 content.innerHTML = `
-                    <div style="margin: 0; padding: 0; line-height: 1.2;">
-                        <div style="margin: 0; padding: 0;">外資籌碼 (${dateText})：</div>
-                        <div style="margin: 0; padding: 0; font-weight: bold; color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'};">
-                            ${displayVal}
-                        </div>
-                    </div>
+                    <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
+                    <div style="margin:0; padding:0; font-size: 16px; font-weight: bold; color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'};">${displayVal}</div>
                 `;
             }  
             var box = document.getElementById("institutionalBox");
@@ -1106,8 +1103,8 @@ function fetchData() {
 
         <div id="institutionalWrapper" style="width: 100%; margin-bottom: 10px;">
             <div id="institutionalBox" class="holding-info-box" style="display:none; border-left: 4px solid #2563eb; width: 100%; box-sizing: border-box; padding: 5px 10px;">
-                <div class="auto-info-title" style="color: #2563eb; margin: 0; padding: 0;">💰 三大法人籌碼追蹤</div>
-                <div id="institutionalContent" class="moat-text" style="margin: 0; padding: 0;">讀取籌碼中...</div>
+                <div class="auto-info-title" style="color: #2563eb; margin: 0; padding: 0; border: none; font-weight: bold;">💰 三大法人籌碼追蹤</div>
+                <div id="institutionalContent" style="margin: 0; padding: 0; line-height: 1.2;"></div>
             </div>
         </div>
 
