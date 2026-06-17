@@ -974,6 +974,13 @@ function fetchData() {
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = function(data) {
             console.log("=== 籌碼數據接收成功 ===", data);
+
+            if (window.chipsChart) {
+                window.chipsChart.data.labels = [data.date];
+                window.chipsChart.data.datasets[0].data = [parseInt(data.netBuy)];
+                window.chipsChart.update();
+                console.log("籌碼圖表已從 processInstitutionalResult 同步更新");
+            }
             var content = document.getElementById("institutionalContent");
 
             var box = document.getElementById("institutionalBox");
