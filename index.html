@@ -680,13 +680,13 @@ function fetchData() {
                         window.priceChart.update();
                         console.log("股價圖表已更新");
                     }
-                    if (window.chipsChart && typeof window.latestChipData !== 'undefined') {
+                    if (window.chipsChart && window.latestChipData) {
                         window.chipsChart.data.labels = [window.latestChipData.date];
                         window.chipsChart.data.datasets[0].data = [parseInt(window.latestChipData.netBuy)];
                         window.chipsChart.update();
                         console.log("籌碼圖數據已更新");
                     } else {
-                        console.log("籌碼資料尚未準備好，等待同步中...");
+                        console.log("籌碼資料尚未同步，跳過籌碼圖更新");
                     }
 
                 } else {
