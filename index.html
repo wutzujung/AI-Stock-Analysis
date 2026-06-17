@@ -681,13 +681,15 @@ function fetchData() {
                         window.priceChart.update();
                         console.log("圖表已透過 Chart.js 更新");
                     }
-                    if (window.chipsChart && currentChipData) {
-                        window.chipsChart.data.labels = [currentChipData.date];
-                        window.chipsChart.data.datasets[0].data = [parseInt(currentChipData.netBuy)];
+                    if (window.chipsChart && typeof window.latestChipData !== 'undefined') {
+                        window.chipsChart.data.labels = [window.latestChipData.date];
+                        window.chipsChart.data.datasets[0].data = [parseInt(window.latestChipData.netBuy)];
                         window.chipsChart.update();
                         console.log("籌碼圖數據已更新");
+                    } else {
+                        console.log("籌碼資料尚未準備好，等待同步中...");
                     }
-                
+
                 } else {
                     console.error("資料解析後為空");
                 }
@@ -962,13 +964,13 @@ function fetchData() {
             }
         }
 
-        //function loadInstitutionalData(symbol) {
+        function loadInstitutionalData(symbol) {
 
-            //var url = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
-            //var script = document.createElement('script');
-            //script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
-            //document.body.appendChild(script);
-        //}
+            var url = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
+            var script = document.createElement('script');
+            script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
+            document.body.appendChild(script);
+        }
         
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = function(data) {
@@ -1027,19 +1029,15 @@ function fetchData() {
             const labels = data.map(item => item.date);
             const netBuyData = data.map(item => parseFloat(item.netBuy));
 
-            if (typeof priceChart !== 'undefined') {
-                priceChart.data.labels = labels;
-                priceChart.data.datasets.push({
-                    label: '歷史買賣超',
-                    data: netBuyData,
-                    type: 'bar', // 以長條圖顯示籌碼
-                    backgroundColor: netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e'),
-                    yAxisID: 'y1' // 需要確保圖表有設定對應的 y 軸
-                });
-                priceChart.update(); // 刷新圖表
+            if (typeof chipsChart !== 'undefined') {
+                chipsChart.data.labels = labels;
+                chipsChart.data.datasets[0].data = netBuyData;
+                chipsChart.data.datasets[0].backgroundColor = netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e');
+                chipsChart.update();
+                console.log("籌碼圖表已成功同步更新");
             }
           } catch (err) {
-            console.error("更新圖表失敗", err);
+            console.error("更新籌碼圖表失敗", err);
           }
         }
 
