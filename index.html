@@ -149,22 +149,25 @@
         function initChipsChart() {
             try {
                 var canvas = document.getElementById('chipsChart');
-                if (!canvas) {
-                    console.warn("找不到 ID 為 chipsChart 的 canvas，跳過初始化。");
-                    return;
-                }
+                if (!canvas) return;
                 var ctx = canvas.getContext('2d');
                 window.chipsChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: [],
                         datasets: [{
-                            label: '法人籌碼 (買賣超)',
+                            label: '法人買賣超 (張)',
                             data: [],
-                            backgroundColor: '#10b981'
+                            backgroundColor: [] // 將會根據正負數動態變色
                         }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        scales: { 
+                            y: { beginAtZero: true } 
+                        }
+                    }   
                 });
                 console.log("法人籌碼圖初始化成功！");
             } catch (e) {
@@ -976,11 +979,18 @@ function fetchData() {
             console.log("=== 籌碼數據接收成功 ===", data);
 
             if (window.chipsChart) {
-                window.chipsChart.data.labels = [data.date];
-                window.chipsChart.data.datasets[0].data = [parseInt(data.netBuy)];
+                var dataArray = Array.isArray(data) ? data : [data];
+                window.chipsChart.data.labels = dataArray.map(item => item.date);
+                window.chipsChart.data.datasets[0].data = dataArray.map(item => parseInt(item.netBuy));
+                window.chipsChart.data.datasets[0].backgroundColor = dataArray.map(item =>
+                     parseInt(item.netBuy) >= 0 ? '#ef4444' : '#22c55e'
+                );
+
                 window.chipsChart.update();
-                console.log("籌碼圖表已從 processInstitutionalResult 同步更新");
+                console.log("籌碼圖表已更新，共", dataArray.length, "筆資料");
             }
+
+            var latestData = Array.isArray(data) ? data[data.length - 1] : data;
             var content = document.getElementById("institutionalContent");
 
             var box = document.getElementById("institutionalBox");
