@@ -145,7 +145,31 @@
                 console.error("圖表初始化失敗，原因：", e);
             }
         }
-
+        function initChipsChart() {
+            try {
+                var canvas = document.getElementById('chipsChart');
+                if (!canvas) {
+                    console.warn("找不到 ID 為 chipsChart 的 canvas，跳過初始化。");
+                    return;
+                }
+                var ctx = canvas.getContext('2d');
+                window.chipsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '法人籌碼 (買賣超)',
+                            data: [],
+                            backgroundColor: '#10b981'
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+                console.log("法人籌碼圖初始化成功！");
+            } catch (e) {
+                console.error("籌碼圖初始化失敗:", e);
+            }
+        }
             function updateChart(chartObj, labels, data) {
                 if (chartObj && chartObj.data && chartObj.data.datasets.length > 0) {
                     chartObj.data.labels = labels;
@@ -160,6 +184,9 @@
             // 2. 確保頁面載入後自動呼叫初始化
             document.addEventListener('DOMContentLoaded', function() {
                 initChart();
+                initChipsChart();
+                initWatchlist();
+                applySettings();
             });
 
         window.onload = function() { initWatchlist(); applySettings(); };
@@ -651,6 +678,12 @@ function fetchData() {
                         window.priceChart.update();
                         console.log("圖表已透過 Chart.js 更新");
                     }
+                    if (window.chipsChart) {
+                        window.chipsChart.data.labels = chipDates;
+                        window.chipsChart.data.datasets[0].data = chipValues;
+                        window.chipsChart.update();
+                    }
+                
                 } else {
                     console.error("資料解析後為空");
                 }
