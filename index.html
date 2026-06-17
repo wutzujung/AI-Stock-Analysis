@@ -62,8 +62,8 @@
         .themes-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;}
         .theme-badge { background: #3b82f6; color: #fff; padding: 3px 6px; border-radius: 8px; font-size: 0.8em; font-weight: bold; }
         
-        .chart-container { position: relative; margin-top: 10px; width: 100%; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 8px; text-align: center; overflow: hidden; min-height: 200px !important; display: block !important;}
-        canvas { max-width: 100%; height: var(--chart-height); width: 100%; }
+        .chart-container { position: relative; width: 100%; height: 300px; margin: 10px 0;}
+        canvas#priceChart { width: 100% !important; height: 100% !important; display: block !important;}
         
         .grid-layout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
         .grid-layout .input-group { margin-bottom: 0; padding: 6px 8px; }
@@ -146,11 +146,14 @@
             }
         }
 
-            function updateChart(labels, data) {
-                if (window.priceChart) {
-                    window.priceChart.data.labels = labels;
-                    window.priceChart.data.datasets[0].data = data;
-                    window.priceChart.update();
+            function updateChart(chartObj, labels, data) {
+                if (chartObj && chartObj.data && chartObj.data.datasets.length > 0) {
+                    chartObj.data.labels = labels;
+                    chartObj.data.datasets[0].data = data;
+                    chartObj.update(); // 執行更新
+                    console.log(`圖表 ${chartObj.canvas.id} 已完成數據更新`);
+                } else {
+                    console.error("找不到對應的圖表物件或 datasets 未初始化。");
                 }
             }
 
@@ -282,65 +285,6 @@
             try { localStorage.setItem("twDirectStockMonitorV11", JSON.stringify(myWatchlist)); } catch(e){}
         }
 
-        function drawChart() {
-            var canvas = document.getElementById("priceChart");
-            var ctx = canvas.getContext("2d");
-            canvas.width = canvas.offsetWidth; canvas.height = currentChartHeight;
-            var w = canvas.width; var h = canvas.height;
-            ctx.clearRect(0, 0, w, h);
-            if (globalValidData.length === 0) return;
-
-            var minP = globalValidData[0].close, maxP = globalValidData[0].close, maxV = globalValidData[0].vol;
-            for (var i = 1; i < globalValidData.length; i++) {
-                if (globalValidData[i].close < minP) minP = globalValidData[i].close;
-                if (globalValidData[i].close > maxP) maxP = globalValidData[i].close;
-                if (globalValidData[i].vol > maxV) maxV = globalValidData[i].vol;
-            }
-
-            var priceRange = maxP - minP; if (priceRange === 0) priceRange = 1;
-            var paddingY = 15; var chartH = h - 35; var volH = 30;       
-
-            ctx.fillStyle = "rgba(148, 163, 184, 0.35)";
-            var barW = Math.max((w / globalValidData.length) * 0.5, 1);
-            for (var i = 0; i < globalValidData.length; i++) {
-                var x = (i / (globalValidData.length - 1)) * w;
-                var currentVolH = (globalValidData[i].vol / maxV) * volH;
-                ctx.fillRect(x - barW/2, h - currentVolH, barW, currentVolH);
-            }
-
-            // 新增功能：如果在圖表範圍內，繪製持股成本線(橘色虛線)
-            var userCostStr = document.getElementById("txtUserCost").value.trim();
-            if(userCostStr !== "" && !isNaN(userCostStr)) {
-                var userCost = parseFloat(userCostStr);
-                if(userCost >= minP && userCost <= maxP) {
-                    var costY = paddingY + (1 - (userCost - minP) / priceRange) * (chartH - paddingY * 2);
-                    ctx.save();
-                    ctx.strokeStyle = "#f97316";
-                    ctx.lineWidth = 1.5;
-                    ctx.setLineDash([4, 4]);
-                    ctx.beginPath();
-                    ctx.moveTo(0, costY);
-                    ctx.lineTo(w, costY);
-                    ctx.stroke();
-                    ctx.fillStyle = "#f97316";
-                    ctx.font = "10px Arial";
-                    ctx.fillText("我的成本: " + userCost, 5, costY - 4);
-                    ctx.restore();
-                }
-            }
-
-            ctx.beginPath(); ctx.strokeStyle = "#0284c7"; ctx.lineWidth = 2;
-            for (var i = 0; i < globalValidData.length; i++) {
-                var x = (i / (globalValidData.length - 1)) * w;
-                var y = paddingY + (1 - (globalValidData[i].close - minP) / priceRange) * (chartH - paddingY * 2);
-                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-            
-            var lastX = w;
-            var lastY = paddingY + (1 - (globalValidData[globalValidData.length-1].close - minP) / priceRange) * (chartH - paddingY * 2);
-            ctx.beginPath(); ctx.arc(lastX - 5, lastY, 4, 0, 2 * Math.PI); ctx.fillStyle = "#ef4444"; ctx.fill();
-        }
 
         function generateAIReport(cPrice, cOpen, cHigh, cLow, estVol, avgVol, ma5, ma20, positionRatio) {
             var bias20 = ((cPrice - ma20) / ma20) * 100;
@@ -705,14 +649,10 @@ function fetchData() {
                         window.priceChart.data.labels = globalValidData.map(d => d.date);
                         window.priceChart.data.datasets[0].data = globalValidData.map(d => d.close);
                         window.priceChart.update();
-                        console.log("圖表數據已更新");
+                        console.log("圖表已透過 Chart.js 更新");
                     }
-                    drawChart(); // 直接呼叫，不要透過 requestAnimationFrame 測試看看
                 } else {
                     console.error("資料解析後為空");
-                }
-                if(globalValidData.length < 5) { 
-                    throw new Error("天數不足"); 
                 }
                 
                 // === 新增：大盤關聯邏輯開始 ===
