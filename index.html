@@ -674,12 +674,11 @@ function fetchData() {
                 if(globalValidData.length > 0) {
                     console.log("資料已就緒，準備繪圖，共", globalValidData.length, "筆");
 
-                    currentChipData = data;
                     if (window.priceChart) {
                         window.priceChart.data.labels = globalValidData.map(d => d.date);
                         window.priceChart.data.datasets[0].data = globalValidData.map(d => d.close);
                         window.priceChart.update();
-                        console.log("圖表已透過 Chart.js 更新");
+                        console.log("股價圖表已更新");
                     }
                     if (window.chipsChart && typeof window.latestChipData !== 'undefined') {
                         window.chipsChart.data.labels = [window.latestChipData.date];
