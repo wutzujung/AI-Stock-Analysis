@@ -973,19 +973,6 @@ function fetchData() {
         window.processInstitutionalResult = function(data) {
             console.log("=== 正在透過舊通道更新 UI 文字 ===");
 
-            //if (window.chipsChart) {
-                //var dataArray = Array.isArray(data) ? data : [data];
-                //window.chipsChart.data.labels = dataArray.map(item => item.date);
-                //window.chipsChart.data.datasets[0].data = dataArray.map(item => parseInt(item.netBuy));
-                //window.chipsChart.data.datasets[0].backgroundColor = dataArray.map(item =>
-                     //parseInt(item.netBuy) >= 0 ? '#ef4444' : '#22c55e'
-                //);
-
-                //window.chipsChart.update();
-                //console.log("籌碼圖表已更新，共", dataArray.length, "筆資料");
-            //}
-
-            var latestData = Array.isArray(data) ? data[data.length - 1] : data;
             var content = document.getElementById("institutionalContent");
 
             var box = document.getElementById("institutionalBox");
@@ -998,10 +985,7 @@ function fetchData() {
 
                 //content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
                 content.innerHTML = `
-                    <div style="font-weight: bold; color: #374151; margin-bottom: 4px;">
-                        💰 三大法人籌碼追蹤
-                    </div>
-                    <div>
+                    <div style="font-size: 15px; color: #1f2937; padding: 5px 0;">
                         外資籌碼 (${dateText})：
                         <span style="color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'}; font-weight: bold;">
                             ${displayVal}
@@ -1012,7 +996,7 @@ function fetchData() {
                 box.style.backgroundColor = "#f9fafb";
                 box.style.border = "1px solid #e5e7eb";
                 box.style.borderRadius = "8px";
-                box.style.padding = "10px 15px"; // 上下內距變小，這樣就不會那麼空了
+                box.style.padding = "5px 15px"; // 垂直 padding 縮小到 5px
                 box.style.margin = "10px 0";
                 box.style.opacity = "1";
                 console.log("UI 已恢復正常顯示");
