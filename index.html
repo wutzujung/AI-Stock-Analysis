@@ -1029,25 +1029,33 @@ function fetchData() {
  
         }
         async function loadStockData(symbol) {
-          const url = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec?symbol=' + symbol; // 記得換成你的網址
+            const url = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec?symbol=' + symbol; // 記得換成你的網址
   
-          try {
-            const response = await fetch(url);
-            const data = await response.json();
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
 
-            if (data && data.length > 0 && typeof chipsChart !== 'undefined') {
-                const labels = data.map(item => item.date);
-                const netBuyData = data.map(item => parseFloat(item.netBuy));
+                console.log("從伺服器收到的原始資料:", data);
 
-                chipsChart.data.labels = labels;
-                chipsChart.data.datasets[0].data = netBuyData;
-                chipsChart.data.datasets[0].backgroundColor = netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e');
-                chipsChart.update();
-                console.log("籌碼圖表已更新，共", labels.length, "筆資料");
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.warn("未收到有效的籌碼歷史陣列");
+                    return;
+                }
+
+                const historyData = data.slice(-20);
+                const labels = historyData.map(item => item.date);
+                const netBuyData = historyData.map(item => parseFloat(item.netBuy));
+
+                if (typeof chipsChart !== 'undefined') {
+                    chipsChart.data.labels = labels;
+                    chipsChart.data.datasets[0].data = netBuyData;
+                    chipsChart.data.datasets[0].backgroundColor = netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e');
+                    chipsChart.update();
+                    console.log("籌碼圖表已更新，目前顯示筆數:", labels.length);
+                }
+            } catch (err) {
+                console.error("更新籌碼圖表失敗", err);
             }
-          } catch (err) {
-            console.error("更新籌碼圖表失敗", err);
-          }
         }
 
     </script>
