@@ -971,19 +971,19 @@ function fetchData() {
         
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = function(data) {
-            console.log("=== 籌碼數據接收成功 ===", data);
+            console.log("=== 正在透過舊通道更新 UI 文字 ===");
 
-            if (window.chipsChart) {
-                var dataArray = Array.isArray(data) ? data : [data];
-                window.chipsChart.data.labels = dataArray.map(item => item.date);
-                window.chipsChart.data.datasets[0].data = dataArray.map(item => parseInt(item.netBuy));
-                window.chipsChart.data.datasets[0].backgroundColor = dataArray.map(item =>
-                     parseInt(item.netBuy) >= 0 ? '#ef4444' : '#22c55e'
-                );
+            //if (window.chipsChart) {
+                //var dataArray = Array.isArray(data) ? data : [data];
+                //window.chipsChart.data.labels = dataArray.map(item => item.date);
+                //window.chipsChart.data.datasets[0].data = dataArray.map(item => parseInt(item.netBuy));
+                //window.chipsChart.data.datasets[0].backgroundColor = dataArray.map(item =>
+                     //parseInt(item.netBuy) >= 0 ? '#ef4444' : '#22c55e'
+                //);
 
-                window.chipsChart.update();
-                console.log("籌碼圖表已更新，共", dataArray.length, "筆資料");
-            }
+                //window.chipsChart.update();
+                //console.log("籌碼圖表已更新，共", dataArray.length, "筆資料");
+            //}
 
             var latestData = Array.isArray(data) ? data[data.length - 1] : data;
             var content = document.getElementById("institutionalContent");
