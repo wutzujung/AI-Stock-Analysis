@@ -56,9 +56,9 @@
         .thermo-bar { height: 100%; width: 50%; background: linear-gradient(to right, #22c55e, #eab308, #ef4444); transition: width 0.5s; }
         .tip-tag { background: #e0f2fe; color: #0369a1; font-size: 0.8em; padding: 2px 6px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 4px; display: inline-block; }
         
-        .auto-info-title { font-weight: bold; margin-bottom: 6px; font-size: 0.95em; border-bottom: 1px dashed rgba(0,0,0,0.08); padding-bottom: 4px;}
+        .auto-info-title { font-weight: bold; font-size: 0.95em; margin-bottom: 2px !important; padding-bottom: 2px !important; border-bottom: 1px dashed rgba(0,0,0,0.08);}
         .color-orange { color: #ea580c; } .color-purple { color: #7e22ce; } .color-blue { color: #0369a1; } .color-green { color: #15803d; }
-        .moat-text { font-size: 0.9em; color: #334155; margin-top: 6px; line-height: 1.45; white-space: pre-wrap; }
+        .moat-text { font-size: 0.9em; color: #334155; margin: 0 !important; padding: 0 !important; line-height: 1.45; white-space: pre-wrap; }
         .themes-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;}
         .theme-badge { background: #3b82f6; color: #fff; padding: 3px 6px; border-radius: 8px; font-size: 0.8em; font-weight: bold; }
         
@@ -972,28 +972,19 @@ function fetchData() {
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = function(data) {
             var content = document.getElementById("institutionalContent");
-            var box = document.getElementById("institutionalBox");
-
-            if (content && box) {
+            if (content) {
                 var rawVal = data.netBuy || "0";
                 var dateText = data.date || "";
                 var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
 
-                //content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
                 content.innerHTML = `
-                    <div style="font-size: 15px; color: #1f2937; margin-top: -10px; margin-bottom: 0;">
+                    <div style="margin: 0; padding: 0; line-height: 1.2;">
                         <div style="margin: 0; padding: 0;">外資籌碼 (${dateText})：</div>
-                        <div style="margin: 0; padding: 0; font-size: 18px; font-weight: bold; color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'};">
+                        <div style="margin: 0; padding: 0; font-weight: bold; color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'};">
                             ${displayVal}
                         </div>
                     </div>
                 `;
-                box.style.display = "block";
-                box.style.backgroundColor = "#f9fafb";
-                box.style.border = "1px solid #e5e7eb";
-                box.style.borderRadius = "8px";
-                box.style.padding = "10px 15px 10px 15px"; // 上、右、下、左 (下邊距設為 10px 即可，若覺得太大可改 5px)
-                box.style.margin = "10px 0";
             }  
             var box = document.getElementById("institutionalBox");
             if (box) {
@@ -1001,9 +992,9 @@ function fetchData() {
             box.style.backgroundColor = "#f9fafb"; // 淺灰色背景，增加層次
             box.style.border = "1px solid #e5e7eb"; // 淺灰色邊框
             box.style.borderRadius = "8px";         // 圓角，看起來比較現代
-            box.style.padding = "5px";             // 增加內距，不要擠在一起
+            box.style.padding = "5px 15px";
             box.style.margin = "5px 0";
-            box.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)"; // 輕微陰影
+            box.style.boxShadow = "none"; // 建議暫時移除陰影，看看空間是否為陰影造成的
             box.style.opacity = "1";
             box.style.visibility = "visible";
             box.style.position = "relative"; // 確保不會因為定位跑掉被蓋住
@@ -1114,9 +1105,9 @@ function fetchData() {
             </div>
 
         <div id="institutionalWrapper" style="width: 100%; margin-bottom: 10px;">
-            <div id="institutionalBox" class="holding-info-box" style="display:none; border-left: 4px solid #2563eb; width: 100%; box-sizing: border-box;">
-                <div class="auto-info-title" style="color: #2563eb;">💰 三大法人籌碼追蹤</div>
-                <div id="institutionalContent" class="moat-text" style="margin:6px 0;">讀取籌碼中...</div>
+            <div id="institutionalBox" class="holding-info-box" style="display:none; border-left: 4px solid #2563eb; width: 100%; box-sizing: border-box; padding: 5px 10px;">
+                <div class="auto-info-title" style="color: #2563eb; margin: 0; padding: 0;">💰 三大法人籌碼追蹤</div>
+                <div id="institutionalContent" class="moat-text" style="margin: 0; padding: 0;">讀取籌碼中...</div>
             </div>
         </div>
 
