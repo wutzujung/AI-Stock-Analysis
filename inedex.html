@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>波段突破自動監控系統 (AI演算+題材筆記版) V14</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    
+    <style>
+        :root { --base-font-size: 14px; --chart-height: 190px; }
+        body { font-family: 'Microsoft JhengHei', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: #f4f6f9; color: #2c3e50; margin: 0; padding: 8px; font-size: var(--base-font-size); transition: font-size 0.2s; -webkit-text-size-adjust: 100%; }
+        .container { background-color: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); box-sizing: border-box; width: 100%; max-width: 600px; margin: 0 auto; width: 100%; display: flex; flex-direction: column;}
+        h2 { text-align: center; color: #1a252f; margin-top: 0; margin-bottom: 12px; font-size: 1.25em; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px; }
+        
+        .toolbar { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; background: #fdfdfd; padding: 8px; border-radius: 8px; border: 1px solid #eaeaea; }
+        .tool-group { display: flex; align-items: center; gap: 4px; }
+        .tool-group span { font-weight: bold; color: #7f8c8d; font-size: 0.85em; }
+        .btn-ctrl { padding: 6px 10px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; font-weight: bold; color: #334155; font-size: 0.9em; }
+        
+        .watchlist-group { display: flex; flex-direction: column; margin-bottom: 12px; gap: 8px; background-color: #f0fdf4; padding: 12px; border-radius: 10px; border: 1px solid #bbf7d0; }
+        .watchlist-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: 'Microsoft JhengHei'; font-size: 1em; background-color: #fff; box-sizing: border-box; }
+        .notes-area { width: 100%; }
+        .notes-area label { display: block; font-weight: bold; color: #166534; margin-bottom: 4px; font-size: 0.9em; }
+        .notes-area textarea { width: 100%; height: 60px; padding: 8px; border: 1px solid #86efac; border-radius: 6px; font-family: 'Microsoft JhengHei'; font-size: 0.95em; resize: none; background-color: #fbfdfb; box-sizing: border-box; }
+        .btn-action-row { width: 100%; display: flex; gap: 8px; }
+        .btn-small { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; font-family: 'Microsoft JhengHei'; font-size: 0.95em; text-align: center; }
+        .btn-add { background-color: #ea580c; } 
+        .btn-remove { background-color: #64748b; } 
+        
+        .input-group { display: flex; align-items: center; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 8px; box-sizing: border-box; }
+        .input-group label { width: 95px; font-weight: bold; color: #334155; font-size: 0.95em; flex-shrink: 0; }
+        .input-group input { flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 1.05em; width: 100%; box-sizing: border-box; background: #fff; }
+        
+        /* 亮色醒目框：持股成本專用 */
+        .cost-input-group { background: #fff7ed; border: 1px solid #ffedd5; border-left: 5px solid #f97316; }
+        .cost-input-group label { color: #c2410c; }
+        
+        .btn { display: block; width: 100%; padding: 12px; color: white; border: none; border-radius: 8px; font-size: 1.05em; cursor: pointer; margin-top: 4px; font-weight: bold; box-sizing: border-box; }
+        .btn-fetch { background-color: #16a34a; box-shadow: 0 2px 4px rgba(22,163,74,0.2); } 
+        
+        .company-header { text-align: center; margin: 10px 0; padding: 10px; background-color: #fafafa; border: 1px dashed #cbd5e1; border-radius: 6px; }
+        .company-header span.label { font-size: 0.95em; color: #64748b; }
+        .company-header span.name { font-size: 1.35em; font-weight: bold; color: #dc2626; margin-left: 6px; }
+        
+        .info-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; width: 100%; margin-bottom: 10px; }
+        .holding-info-box { background-color: #fffaf0; border: 1px solid #feebc8; padding: 12px; border-radius: 6px; border-left: 5px solid #dd6b20; width: 100%; box-sizing: border-box;}
+        .auto-info-box { background-color: #fffbfa; border: 1px solid #fed7aa; padding: 10px; border-radius: 6px; border-left: 4px solid #f97316;}
+        .ai-info-box { background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 10px; border-radius: 6px; border-left: 4px solid #a855f7;}
+        .predict-info-box { background-color: #f0f9ff; border: 1px solid #bae6fd; padding: 10px; border-radius: 6px; border-left: 4px solid #0284c7;}
+        .trend-info-box { background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; border-left: 4px solid #16a34a;}
+        .novice-info-box { background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 6px; border-left: 4px solid #f97316;}
+        
+        .thermo-bg { width: 100%; background: #e2e8f0; border-radius: 10px; height: 16px; margin: 8px 0; overflow: hidden; position: relative; }
+        .thermo-bar { height: 100%; width: 50%; background: linear-gradient(to right, #22c55e, #eab308, #ef4444); transition: width 0.5s; }
+        .tip-tag { background: #e0f2fe; color: #0369a1; font-size: 0.8em; padding: 2px 6px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 4px; display: inline-block; }
+        
+        .auto-info-title { font-weight: bold; margin-bottom: 6px; font-size: 0.95em; border-bottom: 1px dashed rgba(0,0,0,0.08); padding-bottom: 4px;}
+        .color-orange { color: #ea580c; } .color-purple { color: #7e22ce; } .color-blue { color: #0369a1; } .color-green { color: #15803d; }
+        .moat-text { font-size: 0.9em; color: #334155; margin-top: 6px; line-height: 1.45; white-space: pre-wrap; }
+        .themes-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;}
+        .theme-badge { background: #3b82f6; color: #fff; padding: 3px 6px; border-radius: 8px; font-size: 0.8em; font-weight: bold; }
+        
+        .chart-container { display: block !important; position: relative !important; width: 100% !important; height: 300px !important; margin: 20px 0 !important; background: #ffffff !important; border: 1px solid #e2e8f0; border-radius: 8px; z-index: 10;}
+        #priceChart { width: 100% !important; height: 100% !important; display: block !important;}
+        
+        .grid-layout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
+        .grid-layout .input-group { margin-bottom: 0; padding: 6px 8px; }
+        .grid-layout .input-group label { width: 75px; font-size: 0.85em; }
+        .grid-layout .input-group input { padding: 4px; font-size: 0.95em; background: #f8fafc; }
+        
+        .result-box { margin-top: 10px; padding: 12px; background-color: #f8fafc; border-left: 5px solid #cbd5e1; border-radius: 6px; font-size: 0.95em; line-height: 1.5; }
+        .result-title { font-size: 1.1em; font-weight: bold; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #f1f5f9; }
+        ul.analysis-list { margin: 0; padding-left: 16px; color: #334155; }
+        ul.analysis-list li { margin-bottom: 4px; }
+        .badge { padding: 2px 4px; border-radius: 4px; font-size: 0.8em; color: white; margin-right: 4px; font-weight: bold; }
+        .bg-red { background-color: #ef4444; } .bg-green { background-color: #22c55e; } .bg-gray { background-color: #64748b; }
+        .analysis-list { list-style: none; padding: 0; margin: 10px 0; }
+        .analysis-list li { margin-bottom: 8px; }
+        #institutionalWrapper {
+            width: 100% !important;
+            float: none !important;
+        }
+
+        #institutionalBox {
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-left: 4px solid #2563eb;
+            display: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+
+    <script type="text/javascript">
+        var GOOGLE_PROXY_URL = "https://script.google.com/macros/s/AKfycby00Dd0d7v39qBwmqr6wxPHsUiRp69B6v-AoBTj9XTbqytQZBU7MlZYlNdU30pw7F3G/exec"; 
+        var INSTITUTIONAL_URL = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
+        
+        var myWatchlist = [];
+        var globalValidData = [];
+        var currentChipData = null; // 用來儲存籌碼數據的變數
+        var currentFontSize = 14;
+        var currentChartHeight = 190;
+        var isDrawing = false; 
+        
+        var baseMoatDatabase = {
+            "2330": "【絕對技術壟斷】\n全球先進製程晶圓代工絕對霸主。資本支出壁壘與極高良率無人能及，幾乎壟斷全球高階 AI 晶片製造，具備市場絕對定價權。",
+            "2317": "【全球 EMS 龍頭與 AI 巨頭】\n具備全球最強大規模量產與供應鏈整合能力。通吃 NVIDIA 最新架構伺服器關鍵主機板與整機櫃訂單，份額穩固。",
+            "2382": "【一線雲端 CSP 核心夥伴】\n廣達電腦。與 Google、Microsoft 等北美大廠結盟深厚，高階 AI 伺服器整櫃出貨與調校經驗傲視全球，獲利能力高於同業。",
+            "3231": "【AI 伺服器基板霸主】\n緯創資通。率先卡位 NVIDIA GPU 基板 主要供應份額，毛利率受惠於 AI 高毛利產品比重拉高而大幅結構性轉型。"
+        };
+
+        // 1. 初始化圖表的函數
+        function initChart() {
+            try {  
+                var canvas = document.getElementById('priceChart');
+                if (!canvas) {
+                    console.error("找不到 ID 為 priceChart 的 canvas 元素！");
+                    return;
+                }
+
+                var ctx = canvas.getContext('2d');
+
+                console.log("嘗試初始化圖表...");
+
+                // 修正：修正巢狀結構，將 options 移到正確位置
+                window.priceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '股價走勢',
+                            data: [],
+                            borderColor: '#2563eb',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                console.log("圖表初始化成功！");
+            } catch (e) {
+                console.error("圖表初始化失敗，原因：", e);
+            }
+        }
+        function initChipsChart() {
+            try {
+                var canvas = document.getElementById('chipsChart');
+                if (!canvas) return;
+                var ctx = canvas.getContext('2d');
+                window.chipsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '法人買賣超 (張)',
+                            data: [],
+                            backgroundColor: [] // 將會根據正負數動態變色
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        scales: { 
+                            y: { beginAtZero: true } 
+                        }
+                    }   
+                });
+                console.log("法人籌碼圖初始化成功！");
+            } catch (e) {
+                console.error("籌碼圖初始化失敗:", e);
+            }
+        }
+            function updateChart(chartObj, labels, data) {
+                if (chartObj && chartObj.data && chartObj.data.datasets.length > 0) {
+                    chartObj.data.labels = labels;
+                    chartObj.data.datasets[0].data = data;
+                    chartObj.update(); // 執行更新
+                    console.log(`圖表 ${chartObj.canvas.id} 已完成數據更新`);
+                } else {
+                    console.error("找不到對應的圖表物件或 datasets 未初始化。");
+                }
+            }
+
+            // 2. 確保頁面載入後自動呼叫初始化
+            document.addEventListener('DOMContentLoaded', function() {
+                initChart();
+                initChipsChart();
+                initWatchlist();
+                applySettings();
+            });
+
+        window.onload = function() { initWatchlist(); applySettings(); };
+
+        function showTip(type) {
+            var msgs = {
+                'bias': "💡 什麼是乖離率？\n代表今天股價離這一個月的平均成本（月線）有多遠。\n正太多（如 > 10%）代表大家都賺很多了，隨時有人想賣，新手不要亂追高！\n負太多（如 < -10%）代表跌得很誇張，可能有人斷頭拋售。",
+                'position': "💡 什麼是近3個月位階？\n把過去三個月的最高價設為100%、最低價設為0%。\n如果超過75%代表現在是相對高點；低於25%代表是相對低點。",
+                'vol': "💡 什麼是成交量比？\n今天預估的成交量除以過去5天的平均量。\n大於1.5倍代表今天這檔股票很熱門、有人在買賣。如果小於1倍代表今天大家對它沒興趣。"
+            };
+            alert(msgs[type]);
+        }
+
+        function changeFontSize(step) {
+            currentFontSize += step;
+            if(currentFontSize < 12) currentFontSize = 12;
+            if(currentFontSize > 22) currentFontSize = 22;
+            document.documentElement.style.setProperty('--base-font-size', currentFontSize + 'px');
+        }
+
+        function changeChartSize(step) {
+            console.log("當前繪製資料筆數:", globalValidData.length);
+            currentChartHeight += step;
+            if(currentChartHeight < 120) currentChartHeight = 120;
+            if(currentChartHeight > 400) currentChartHeight = 400;
+            document.documentElement.style.setProperty('--chart-height', currentChartHeight + 'px');
+            if(globalValidData.length > 0 && !isDrawing) {
+                isDrawing = true;
+                //window.requestAnimationFrame(function() {
+                    //drawChart();
+                    //isDrawing = false;
+                //});
+            }
+        }
+
+        function applySettings() {
+            document.documentElement.style.setProperty('--base-font-size', currentFontSize + 'px');
+            document.documentElement.style.setProperty('--chart-height', currentChartHeight + 'px');
+        }
+
+        function initWatchlist() {
+            try {
+                var storedData = localStorage.getItem("twDirectStockMonitorV11");
+                if (storedData) { myWatchlist = JSON.parse(storedData); } 
+                else {
+                    myWatchlist = [
+                        { symbol: "2330", name: "台積電", userNotes: "", userCost: "" },
+                        { symbol: "2317", name: "鴻海", userNotes: "", userCost: "" }
+                    ];
+                }
+            } catch(e) { myWatchlist = []; }
+            renderWatchlist();
+        }
+
+        function renderWatchlist() {
+            var sel = document.getElementById("selWatchlist");
+            sel.options.length = 1;
+            for (var i = 0; i < myWatchlist.length; i++) {
+                var opt = document.createElement("option");
+                opt.value = myWatchlist[i].symbol;
+                opt.text = myWatchlist[i].symbol + " (" + myWatchlist[i].name + ")";
+                sel.appendChild(opt);
+            }
+        }
+
+        function loadFromWatchlist() {
+            var sel = document.getElementById("selWatchlist");
+            if (sel.value !== "") {
+                document.getElementById("txtSymbol").value = sel.value;
+                for(var i=0; i<myWatchlist.length; i++) {
+                    if(myWatchlist[i].symbol === sel.value) {
+                        document.getElementById("txtNotes").value = myWatchlist[i].userNotes || "";
+                        document.getElementById("txtUserCost").value = myWatchlist[i].userCost || "";
+                        break;
+                    }
+                }
+                fetchData();
+            }
+        }
+
+        function addToWatchlist() {
+            var sym = document.getElementById("txtSymbol").value.replace(/^\s+|\s+$/g, '').toUpperCase().split('.')[0];
+            var notes = document.getElementById("txtNotes").value;
+            var cost = document.getElementById("txtUserCost").value.trim();
+            if (sym === "") { alert("請先輸入股票代號！"); return; }
+            var name = document.getElementById("lblCompanyName").innerText;
+            if (name.indexOf("解析") !== -1 || name === "等待抓取..." || name === "查無資料") name = "自選股";
+            
+            if(notes.trim() !== "") {
+                document.getElementById("autoMoatBox").innerHTML = notes.replace(/\n/g, "<br>");
+            }
+
+            for (var i = 0; i < myWatchlist.length; i++) {
+                if (myWatchlist[i].symbol === sym) {
+                    myWatchlist[i].name = name; 
+                    myWatchlist[i].userNotes = notes; 
+                    myWatchlist[i].userCost = cost;
+                    saveData(); renderWatchlist();
+                    document.getElementById("selWatchlist").value = sym;
+                    alert("✅ 已成功儲存該股自訂筆記與持股成本！"); return;
+                }
+            }
+            myWatchlist.push({ symbol: sym, name: name, userNotes: notes, userCost: cost });
+            saveData(); renderWatchlist();
+            document.getElementById("selWatchlist").value = sym;
+            alert("✅ 成功加入自選股庫！");
+        }
+
+        function removeFromWatchlist() {
+            var sym = document.getElementById("selWatchlist").value;
+            if (sym === "") return;
+            if (confirm("確定要刪除此代號與筆記嗎？")) {
+                myWatchlist = myWatchlist.filter(function(item){ return item.symbol !== sym; });
+                saveData(); renderWatchlist();
+                document.getElementById("txtNotes").value = "";
+                document.getElementById("txtUserCost").value = "";
+                document.getElementById("autoMoatBox").innerHTML = "等待抓取...";
+                document.getElementById("holdingStrategyBox").style.display = "none";
+            }
+        }
+
+        function saveData() {
+            try { localStorage.setItem("twDirectStockMonitorV11", JSON.stringify(myWatchlist)); } catch(e){}
+        }
+
+
+        function generateAIReport(cPrice, cOpen, cHigh, cLow, estVol, avgVol, ma5, ma20, positionRatio) {
+            var bias20 = ((cPrice - ma20) / ma20) * 100;
+            var body = Math.abs(cPrice - cOpen);
+            var upperShadow = cHigh - Math.max(cPrice, cOpen);
+            var lowerShadow = Math.min(cPrice, cOpen) - cLow;
+
+            var report = "<div>";
+            report += "<strong>📊 位階與乖離率：</strong><span class='tip-tag' onclick='showTip(\"position\")'>位階?</span> <span class='tip-tag' onclick='showTip(\"bias\")'>乖離率?</span><br>股價處於近3個月相對位階的 " + positionRatio.toFixed(1) + "% (" + (positionRatio > 75 ? "高檔超買區" : (positionRatio < 25 ? "低檔超賣區" : "中軌震盪區")) + ")。與月線(20MA)相對乖離率為 " + bias20.toFixed(2) + "%。";
+            
+            report += "<br><br><strong>🕯️ 今日K線型態：</strong><br>";
+            if (upperShadow > body * 1.5 && upperShadow > cPrice * 0.008) report += "留下實體大於上影線之避雷針，上方高檔解套或獲利拋壓沈重。";
+            else if (lowerShadow > body * 1.5 && lowerShadow > cPrice * 0.008) report += "下影線極長，低檔買盤防守積極，探底後具備支撐力道。";
+            else if (cPrice > cOpen && body > cPrice * 0.015) report += "大實體紅K棒多方發動攻擊，多頭占盡優勢。";
+            else report += "多空震盪收窄，K線呈現十字星或短實體，等待市場放量表態。";
+            
+            report += "<br><br><strong>🤖 AI 策略防守研判：</strong><br>";
+            if (cPrice > ma20 && estVol >= avgVol * 1.7 && cPrice >= cOpen) report += "<span style='color:#b91c1c; font-weight:bold;'>【帶量強勢突破】</span>價量齊揚，屬於標準突破追擊訊號。多單以今日低點 " + cLow.toFixed(2) + " 元或5日線作波段防守點。";
+            else if (cPrice < ma20) report += "<span style='color:#64748b; font-weight:bold;'>【弱勢空頭格局】</span>受制於均線反壓之下。中線趨勢偏弱，空手者應多看少動，切勿進場盲目接刀。";
+            else report += "<span style='color:#0284c7; font-weight:bold;'>【量縮常態整理】</span>站穩月線之上，但缺乏波段攻擊量，預期將進行高姿態箱型整理，可區間低吸。";
+            report += "</div>"; return report;
+        }
+
+        function analyzeNextDayProbability(dataArray, ma5, ma20) {
+            if (dataArray.length < 25) return { upProb: 50, totalPatterns: 0, reason: "歷史資料天數不足以建立統計特徵模型。" };
+            var matchPatternCount = 0; var nextDayUpCount = 0;
+            var todayIdx = dataArray.length - 1; var today = dataArray[todayIdx];
+            var todayBody = today.close - today.open; var todayIsRed = todayBody >= 0; var todayVol = today.vol;
+            
+            var sumV = 0; for(var m=todayIdx; m>todayIdx-5; m--) sumV += dataArray[m].vol;
+            var todayAvgV = sumV / 5; var todayVolRatio = todayVol / todayAvgV;
+
+            for (var i = 20; i < dataArray.length - 1; i++) {
+                var htmlCur = dataArray[i]; var htmlPrevSumV = 0;
+                for(var n=i; n>i-5; n--) htmlPrevSumV += dataArray[n].vol;
+                var htmlAvgV = htmlPrevSumV / 5;
+                var htmlBody = htmlCur.close - htmlCur.open; var htmlIsRed = htmlBody >= 0; var htmlVolRatio = htmlCur.vol / htmlAvgV;
+                
+                if (htmlIsRed === todayIsRed && Math.abs(htmlVolRatio - todayVolRatio) < 0.35) {
+                    matchPatternCount++;
+                    var htmlNextDay = dataArray[i + 1];
+                    if (htmlNextDay.close > htmlCur.close) { nextDayUpCount++; }
+                }
+            }
+            
+            var trendWeight = 0;
+            if (today.close > ma5 && ma5 > ma20) trendWeight = 5;
+            if (today.close < ma5 && ma5 < ma20) trendWeight = -5;
+            
+            var finalProb = 50;
+            if (matchPatternCount > 0) {
+                finalProb = (nextDayUpCount / matchPatternCount) * 100;
+                finalProb = finalProb * 0.7 + (50 + trendWeight) * 0.3;
+            } else { finalProb = 50 + trendWeight; }
+            
+            if (finalProb > 85) finalProb = 85; if (finalProb < 15) finalProb = 15;
+            
+            var directionText = ""; var actionAdvice = "";
+            if (finalProb >= 55) {
+                directionText = "<span style='color:#ef4444; font-weight:bold;'>📈 偏多看漲</span> (預期上漲機率 " + finalProb.toFixed(1) + "%)";
+                actionAdvice = "依據量價標籤回測，歷史上出現相似 K 線與量比結構時，隔日延續多頭慣性較強。短線操作可考慮於尾盤適度偏多卡位。";
+            } else if (finalProb <= 45) {
+                directionText = "<span style='color:#22c55e; font-weight:bold;'>📉 偏空看跌</span> (預期下跌機率 " + (100 - finalProb).toFixed(1) + "%)";
+                actionAdvice = "量價型態顯示上方解套或逢高調節壓力顯著，歷史相似結構下隔日收黑機率較高。建議空手靜待回測，持股者不宜追高。";
+            } else {
+                directionText = "<span style='color:#64748b; font-weight:bold;'>⚖️ 區間多空拉鋸</span> (多空機率各半 " + finalProb.toFixed(1) + "%)";
+                actionAdvice = "當前型態特徵在歷史上無明顯方向性特徵，隔日走勢容易受大盤震盪影響，建議維持既有波段策略，不急於短線無方向性押注。";
+            }
+            
+            return { probHtml: directionText, advice: actionAdvice, totalPatterns: matchPatternCount, score: finalProb };
+        }
+
+        function analyzeMediumTrend(dataArray, ma5, ma20) {
+            var dataLen = dataArray.length;
+            var todayData = dataArray[dataLen - 1];
+            
+            var sum60 = 0;
+            var checkDays = Math.min(40, dataLen);
+            for(var i=dataLen-1; i>=dataLen-checkDays; i--) sum60 += dataArray[i].close;
+            var ma40 = sum60 / checkDays;
+
+            var trendTitle = ""; var trendDesc = ""; var barColor = "#64748b"; var trendType = "none";
+
+            var prevSum20 = 0;
+            for(var i=dataLen-2; i>=dataLen-21; i--) prevSum20 += dataArray[i].close;
+            var prevMa20 = prevSum20 / 20;
+            var ma20Slope = ma20 - prevMa20; 
+
+            if (todayData.close > ma5 && ma5 > ma20 && ma20 > ma40 && ma20Slope > 0) {
+                trendTitle = "🚀 進入【波段多頭主升段】慣性";
+                trendDesc = "均線呈現標準多頭排列，且月線斜率強勢向上。未來 2-3 週中期大趨勢具備極強的驚人慣性，不容易輕易大跌，每次拉回皆為波段防守買點。";
+                barColor = "#ef4444";
+                trendType = "bull";
+            } else if (todayData.close > ma20 && ma20Slope > 0 && ma5 <= ma20) {
+                trendTitle = "⚖️ 處於【多頭高檔震盪整理】";
+                trendDesc = "中期趨勢尚未被破壞，但短線動動能（5日線）放緩。未來趨勢預期將拉長進行橫盤箱型洗盤，洗淨浮額後才有機會再度發動攻擊。";
+                barColor = "#eab308";
+                trendType = "shake_up";
+            } else if (todayData.close > ma20 && ma20Slope <= 0) {
+                trendTitle = "⚠️ 處於【多空反轉臨界點】";
+                trendDesc = "股價雖在月線上方，但中期均線走平或下彎。未來一週為關鍵扣抵區，若無法放量大紅K拉開距離，大趨勢隨時有轉為中期修正的潛在風險。";
+                barColor = "#f97316";
+                trendType = "warning";
+            } else if (todayData.close < ma20 && ma5 < ma20 && ma20Slope < 0) {
+                trendTitle = "❄️ 陷入【中期弱勢空頭修正】";
+                trendDesc = "大趨勢完全被均線死死反壓，且月線斜率加速下墜。未來數週趨勢將持續呈現底底低慣性，切勿盲目猜測低點進場攤平，應等待均線走平。";
+                barColor = "#22c55e";
+                trendType = "bear";
+            } else {
+                trendTitle = "🔄 屬於【無方向性渾沌盤整】";
+                trendDesc = "短、中期均線互相糾纏，股價在均線上下反覆穿梭。未來大趨勢尚未明朗，市場正處於築底或高檔出貨的混沌期，建議縮小資金水位。";
+                barColor = "#64748b";
+                trendType = "flat";
+            }
+
+            var html = "<strong>📈 未來中期波段趨勢：</strong><span style='color:" + barColor + "; font-weight:bold;'>" + trendTitle + "</span><br>";
+            html += "<p style='margin:6px 0 0 0; line-height:1.5; color:#475569; font-size:0.95em;'>" + trendDesc + "</p>";
+            document.getElementById("mediumTrendBox").innerHTML = html;
+            
+            return trendType;
+        }
+
+        function generateNoviceDashboard(cPrice, ma20, volRatio, positionRatio) {
+            var score = 50;
+            if (cPrice > ma20) score += 15; else score -= 15;
+            if (volRatio > 1.5) score += 15;
+            if (positionRatio < 30) score += 10; 
+            if (positionRatio > 85) score -= 10; 
+            if (score > 100) score = 100; if (score < 0) score = 0;
+
+            var statusText = ""; var statusColor = "";
+            if(score >= 70) { statusText = "🔥 多頭非常強烈 (防追高風險)"; statusColor = "#ef4444"; }
+            else if(score >= 45) { statusText = "⚖️ 溫和箱型整理 (適合耐心低吸)"; statusColor = "#eab308"; }
+            else { statusText = "❄️ 空頭跌勢或冰凍期 (建議先觀望)"; statusColor = "#22c55e"; }
+
+            var chk1 = cPrice > ma20 ? "✅ 股價在安全線(月線)上方" : "❌ 股價被均線壓著打 (弱勢)";
+            var chk2 = volRatio >= 1.2 ? "✅ 有熱門成交量 (有人在照顧)" : "❌ 沒什麼人理它 (沒量常態盤整)";
+            var chk3 = positionRatio < 80 ? "✅ 價格還沒漲到最高極端區" : "❌ 已經漲到歷史高點極端區 (高風險)";
+
+            var html = "<div>";
+            html += "<strong>🚦 小白多空安全溫度計：</strong><span style='color:"+statusColor+";font-weight:bold;'>"+statusText+"</span>";
+            html += "<div class='thermo-bg'><div class='thermo-bar' style='width:"+score+"%; background:"+statusColor+";'></div></div>";
+            html += "<br><strong>🎯 傻瓜式防呆條件檢查表：</strong><br>";
+            html += "<span style='font-size:0.95em; line-height:1.6;'>";
+            html += chk1 + "<br>" + chk2 + "<br>" + chk3 + "</span>";
+            html += "</div>";
+            
+            document.getElementById("noviceDashboardBox").innerHTML = html;
+        }
+
+        // 新增功能：持股成本動態策略診斷引擎
+        // A. 新增新聞解析函式 (直接貼在 script 內任何空行處)
+function parseNews(htmlText) {
+    var newsList = document.getElementById("newsList");
+    var newsContainer = document.getElementById("newsContainer");
+    if (!newsList) return;
+    
+    newsList.innerHTML = "";
+    
+    // 使用 DOMParser 將字串轉為可查詢的 DOM 物件
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(htmlText, 'text/html');
+    
+    // 鎖定新聞列表區塊
+    var items = doc.querySelectorAll('li, div.stream-item');
+    var count = 0;
+    
+    items.forEach(function(item) {
+        var a = item.querySelector('h3 a');
+        if (a && count < 6) {
+            var href = a.getAttribute('href');
+            var title = a.innerText.trim();
+            
+            // 【關鍵修改】：嘗試從 time 標籤的 datetime 屬性中抓取日期
+            var timeEl = item.querySelector('time');
+            var dateStr = "即時新聞";
+            if (timeEl && timeEl.getAttribute('datetime')) {
+                // 將 ISO 格式 (2026-06-05T...) 轉為 YYYY-MM-DD
+                dateStr = timeEl.getAttribute('datetime').split('T')[0];
+            }
+            
+            if (href && href.includes('/news/') && title.length > 5) {
+                var fullUrl = href.startsWith('http') ? href : 'https://tw.stock.yahoo.com' + href;
+                
+                newsList.innerHTML += `
+                    <div style="margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+                        <a href="${fullUrl}" target="_blank" style="color:#0369a1; text-decoration:none; font-size:0.95em; font-weight:bold; display:block;">
+                            ${title}
+                        </a>
+                        <div style="font-size:0.75em; color:#64748b; margin-top:4px;">
+                            📅 ${dateStr}
+                        </div>
+                    </div>`;
+                count++;
+            }
+        }
+    });
+    
+    newsContainer.style.display = (count > 0) ? "block" : "block";
+    if (count === 0) newsList.innerHTML = "<div style='padding:10px; color:#666;'>目前無即時新聞內容。</div>";
+}
+
+// 整合後的持股策略診斷
+function evalHoldingStrategy(cPrice, cLow, ma20, trendType) {
+    var costStr = document.getElementById("txtUserCost").value.trim();
+    var box = document.getElementById("holdingStrategyBox");
+    if(costStr === "" || isNaN(costStr)) { box.style.display = "none"; return; }
+    
+    var cost = parseFloat(costStr);
+    var returnRate = ((cPrice - cost) / cost) * 100;
+    var isProfit = (returnRate >= 0);
+    
+    var titleText = isProfit ? "💰 目前持股狀態：【獲利中 (報酬率: +" + returnRate.toFixed(1) + "%)】" : "⚠️ 目前持股狀態：【套牢中 (報酬率: " + returnRate.toFixed(1) + "%)】";
+    var color = isProfit ? "#e53e3e" : "#38a169";
+    var actionText = "";
+
+    if(isProfit) {
+        if(trendType === "bull") {
+            actionText = "👉 <strong>建議：【續抱】</strong>目前多頭主升段，防守月線(" + ma20.toFixed(1) + ")與今日低點(" + cLow.toFixed(1) + ")，利潤奔跑。";
+        } else {
+            actionText = "👉 <strong>建議：【分批停利】</strong>高檔動能趨緩，建議先獲利了結 1/3，剩餘部位以月線防守。";
+        }
+    } else {
+        if(returnRate <= -7.0) {
+            color = "#e53e3e";
+            actionText = "🚨 <strong>建議：【嚴格停損】</strong>虧損已達 7%，請果斷出清保留資金實力。";
+        } else if(trendType === "bear") {
+            actionText = "🚨 <strong>建議：【反彈快售】</strong>趨勢轉弱，利用反彈機會降低部位。";
+        } else {
+            actionText = "👉 <strong>建議：【暫時續抱】</strong>以月線(" + ma20.toFixed(1) + ")作為最後防守點。";
+        }
+    }
+    if(isProfit && returnRate >= 10.0) {
+        actionText += "<br><span style='color:#d97706; font-weight:bold;'>✨ 已達標 10% 獲利目標，建議檢查是否分批入袋。</span>";      
+    }
+    
+    box.innerHTML = "<div class='auto-info-title' style='color:" + color + ";'>" + titleText + "</div><p style='margin:6px 0;'>" + actionText + "</p>";
+    box.style.borderLeftColor = color;
+    box.style.display = "block";
+}
+
+function fetchData() {
+            var symbol = document.getElementById("txtSymbol").value;
+            var symbolInput = symbol;
+            if (!symbol) {
+                 alert("請輸入股票代號！"); return; }
+            
+            document.getElementById("lblCompanyName").innerText = "資料解析中...";
+            document.getElementById("lblResult").innerHTML = "<div style='text-align:center;'><strong>透過專屬 GAS 隧道對接 Yahoo 中...</strong></div>";
+            document.getElementById("autoThemesBox").innerHTML = "資料庫檢索完畢";
+            
+            var displayMoat = ""; var userHasNotes = false;
+            for(var i=0; i<myWatchlist.length; i++) {
+                if(myWatchlist[i].symbol === symbolInput && myWatchlist[i].userNotes.trim() !== "") {
+                    displayMoat = "【自訂操盤筆記】\n" + myWatchlist[i].userNotes; userHasNotes = true; break;
+                }
+            }
+            if (!userHasNotes) {
+                if (baseMoatDatabase[symbolInput]) { displayMoat = baseMoatDatabase[symbolInput]; } 
+                else { displayMoat = "【一般上市櫃標的】\n目前資料庫無內建核心護城河。可至上方綠色區塊自行輸入研究題材。"; }
+            }
+            document.getElementById("autoMoatBox").innerHTML = displayMoat.replace(/\n/g, "<br>");
+            document.getElementById("aiReportBox").innerHTML = "演算中...";
+            document.getElementById("nextDayPredictBox").innerHTML = "計算中...";
+            document.getElementById("mediumTrendBox").innerHTML = "計算中...";
+            document.getElementById("noviceDashboardBox").innerHTML = "分析中...";
+            document.getElementById("holdingStrategyBox").style.display = "none";
+
+            var targetNameUrl = "https://tw.stock.yahoo.com/quote/" + symbolInput;
+            var nameProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(targetNameUrl);
+            var targetApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbolInput + ".TW?range=3mo&interval=1d&region=TW&lang=zh-Hant-TW";
+            var klineProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(targetApiUrl);
+
+            // 【新增】抓取大盤 (^TWII 是台股加權指數代號)
+            var marketApiUrl = "https://query1.finance.yahoo.com/v8/finance/chart/%5ETWII?range=1mo&interval=1d&region=TW&lang=zh-Hant-TW";
+            var marketProxyUrl = GOOGLE_PROXY_URL + "?url=" + encodeURIComponent(marketApiUrl);
+
+            Promise.all([
+                fetch(nameProxyUrl).then(res => res.text()).catch(() => ""),
+                fetch(klineProxyUrl).then(res => res.json()).catch(() => null),
+                fetch(marketProxyUrl).then(res => res.json()).catch(() => null)
+            ])
+               .then(([htmlText, klineJson, marketJson]) => {
+                    console.log("大盤數值測試:", marketJson.chart.result[0].meta.regularMarketPrice, marketJson.chart.result[0].meta.previousClose);
+                    // 【除錯用】按下抓取後，請打開瀏覽器 F12 的「Console」面板看印出來的內容
+                    console.log("個股資料:", klineJson);
+                    console.log("大盤資料:", marketJson);
+
+                    // 1. 解析名稱 (這會移除「資料解析中...」字樣)
+                    var titleMatch = htmlText.match(/<title>(.*?)\(/);
+                    var companyName = titleMatch ? titleMatch[1].trim() : "解析完畢";
+
+                    document.getElementById("lblCompanyName").innerText = companyName;
+
+                    checkDispositionAuto(symbolInput);
+
+                    // 2. 解析新聞 (關鍵：確保這裡執行)
+                    parseNews(htmlText);
+
+                    // 【新增】計算真實的大盤漲跌幅
+                    var marketChangePercent = 0;
+                    if (marketJson && marketJson.chart && marketJson.chart.result && marketJson.chart.result[0].indicators.quote[0].close) {
+                        var closeData = marketJson.chart.result[0].indicators.quote[0].close;
+                        
+                        var mToday = null;
+
+                        for (var i = closeData.length - 1; i >= 0; i--) {
+                            if (closeData[i] !== null) {
+                                mToday = closeData[i];
+
+                                for (var j = i - 1; j >= 0; j--) {
+                                    if (closeData[j] !== null) {
+                                        var mPrev = closeData[j];
+                                        marketChangePercent = ((mToday - mPrev) / mPrev) * 100;
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    // 將計算結果暫存起來，待會傳給 performMarketCorrelation
+                    return { klineJson, marketChangePercent };
+                })          
+                .then(({klineJson, marketChangePercent}) => {
+
+                if (!klineJson || !klineJson.chart || !klineJson.chart.result || klineJson.chart.result.length === 0) {
+                    console.log("資料異常:", klineJson);
+                    throw new Error("查無交易資料");
+                }
+
+                var result = klineJson.chart.result[0];
+
+                var quotes;
+                if (result.indicators && result.indicators.quote && result.indicators.quote[0]) {
+                    quotes = result.indicators.quote[0];
+                } else {
+                    console.warn("指標資料缺失，嘗試使用 meta 數據");
+                    throw new Error("查無成交指標");
+                }
+
+                var finalJson = klineJson;
+                var adjClose = result.indicators.adjclose ? result.indicators.adjclose[0].adjclose : quotes.close;
+               
+                globalValidData = [];
+                for(var i = 0; i < quotes.close.length; i++){
+                    if(quotes.close[i] !== null) {
+                        globalValidData.push({ 
+                            date: quotes.timestamp ? new Date(quotes.timestamp[i] * 1000).toLocaleDateString() : i,
+                            open: quotes.open ? quotes.open[i] : 0,
+                            high: quotes.high ? quotes.high[i] : 0,
+                            low: quotes.low ? quotes.low[i] : 0,
+                            close: adjClose[i] ? adjClose[i] : quotes.close[i],
+                            vol: quotes.volume ? quotes.volume[i] : 0
+                        });
+                    }
+                }
+                if(globalValidData.length > 0) {
+                    console.log("資料已就緒，準備繪圖，共", globalValidData.length, "筆");
+
+                    if (window.priceChart) {
+                        window.priceChart.data.labels = globalValidData.map(d => d.date);
+                        window.priceChart.data.datasets[0].data = globalValidData.map(d => d.close);
+                        window.priceChart.update();
+                        console.log("股價圖表已更新");
+                    }
+                    loadStockData(symbolInput);
+
+                    console.log("籌碼資料尚未同步，跳過籌碼圖更新");
+
+                } else {
+                    console.error("資料解析後為空");
+                }
+                
+                // === 新增：大盤關聯邏輯開始 ===
+                var todayClose = quotes.close[quotes.close.length - 1];
+                var yesterdayClose = quotes.close[quotes.close.length - 2];
+                var stockChangePercent = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
+                performMarketCorrelation(stockChangePercent, parseFloat(marketChangePercent).toFixed(2));
+                // === 新增：大盤關聯邏輯結束 ===
+                window.loadInstitutionalData(symbol)
+                if (typeof processIndicators === 'function') {
+                    processIndicators();
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById("lblResult").innerHTML = "<div style='color:#ef4444;'><strong>專屬通道資料解析異常</strong><br>請確認代號是否正確。</div>";
+            });           
+        }
+        window.loadInstitutionalData = function(symbol) {
+            var cacheKey = "fund_cache_" + symbol;
+            var cachedData = localStorage.getItem(cacheKey);
+            var now = new Date().getTime();
+            var TWELVE_MINUTES = 30 * 60 * 1000;
+
+            if (cachedData) {
+                try {
+                    var parsed = JSON.parse(cachedData);
+                    if ((now - parsed.timestamp) < TWELVE_MINUTES) {
+                        console.log("從快取讀取籌碼 (30分內):", parsed);
+                        window.processInstitutionalResult(parsed);
+                        return;
+                        }
+                } catch (e) {
+                    console.warn("快取格式錯誤，清除中...");
+                    localStorage.removeItem(cacheKey);
+                }
+            }
+
+            var url = "/api/getdata";
+                
+            fetch(url)
+                .then(res => res.json())
+                .then(json => {
+                    if (!json || !json.data) throw new Error("無效資料");
+
+                    var binaryString = atob(json.data);
+                    var bytes = new Uint8Array(binaryString.length);
+                    for (var i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+
+                    var decoder = new TextDecoder('big5');
+                    var csvText = decoder.decode(bytes);
+                    var lines = csvText.split('\n');
+
+                    var dateStr = lines[0] ? lines[0].replace(/"/g, "").replace("三大法人買賣超日報", "").trim() : "讀取失敗";
+                    var found = false;
+                    for (var i = 2; i < lines.length; i++) {
+                        if (lines[i].indexOf('"' + symbol + '"') !== -1) {
+                            var cols = lines[i].split('","');
+                            var rawValue = cols[cols.length - 1].replace(/"/g, "").replace(/,/g, "").replace(/#/g, "").trim();
+                            var shares = parseInt(rawValue);
+
+                            if (!isNaN(shares)) {
+                                var lots = Math.round(shares / 1000);
+
+                                var result = {
+                                    netBuy: (lots !== undefined && lots !== null) ? lots.toString() : "0",
+                                    date: dateStr,
+                                    timestamp: now
+                                };
+                                localStorage.setItem(cacheKey, JSON.stringify(result));
+
+                                saveToSheet(symbol, result.netBuy, result.date);
+
+                                window.processInstitutionalResult(result);
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) {
+                        var noData = { netBuy: "0", date: dateStr, timestamp: now };
+                        localStorage.setItem(cacheKey, JSON.stringify(noData));
+
+                        saveToSheet(symbol, noData.netBuy, noData.date);
+
+                        window.processInstitutionalResult(noData);
+                    }
+            })
+            .catch(err => {
+                console.error("Fetch 失敗:", err);
+                window.processInstitutionalResult({ netBuy: "Err", date: "網頁端讀取失敗" });
+            });   
+    };     
+        function saveToSheet(symbol, netBuy, date) {
+        // 【重要】請將下方網址替換成你部署 GAS 後得到的 Web App URL
+        var scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec"; 
+    
+        fetch(scriptUrl, {
+            method: "POST",
+            mode: "no-cors", 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                symbol: symbol, 
+                netBuy: netBuy, 
+                date: date 
+            })
+        }).then(() => console.log("籌碼已成功同步至 Google Sheet"))
+          .catch(err => console.error("寫入 Sheet 失敗:", err));
+    }
+
+        function getMA(days) {
+            var sum = 0;
+            var startIdx = globalValidData.length - days;
+            for(var i = startIdx; i < globalValidData.length; i++) sum += globalValidData[i].close;
+            return (sum / days);
+        }
+
+        function processIndicators() {
+            var dataLen = globalValidData.length; 
+            var currentData = globalValidData[dataLen - 1];
+            var cPrice = currentData.close; 
+            var cOpen = currentData.open; 
+            var cHigh = currentData.high; 
+            var cLow = currentData.low;
+            var actualVol = Math.floor(currentData.vol / 1000);
+            var ma5 = getMA(5); 
+            var ma20 = getMA(20);
+
+            var now = new Date(); var h = now.getHours(); var m = now.getMinutes();
+            var isTrading = (h === 9 && m >= 0) || (h > 9 && h < 13) || (h === 13 && m <= 30);
+            var elapsedMins = (h - 9) * 60 + m; var estVol = actualVol; var volLabel = "今日實量";
+            
+            if (isTrading && elapsedMins > 0 && elapsedMins <= 270) {
+                estVol = Math.floor(actualVol * (270 / elapsedMins)); volLabel = "盤中估量";
+            }
+            var sumVol5 = 0; for(var j = dataLen - 1; j >= dataLen - 5; j--) sumVol5 += globalValidData[j].vol;
+            var avgVol = Math.floor((sumVol5 / 5) / 1000);
+            var maxHigh20 = 0; for(var k = dataLen - 2; k >= dataLen - 21; k--) { if(globalValidData[k] && globalValidData[k].high > maxHigh20) maxHigh20 = globalValidData[k].high; }
+
+            document.getElementById("txtPrice").value = cPrice.toFixed(2); 
+            document.getElementById("txtOpen").value = cOpen.toFixed(2);
+            document.getElementById("txtLow").value = cLow.toFixed(2); 
+            document.getElementById("lblVolType").innerText = volLabel + "：";
+            document.getElementById("txtVol").value = estVol; 
+            document.getElementById("txtAvgVol").value = avgVol;
+            document.getElementById("txtHighPrice").value = maxHigh20 > 0 ? maxHigh20.toFixed(2) : cHigh.toFixed(2); 
+            document.getElementById("txtMA20").value = ma20.toFixed(2);
+            
+            var volRatio = (avgVol > 0) ? (estVol / avgVol).toFixed(1) : 0;
+            var isBreakout = (cPrice >= maxHigh20); 
+            var isRedCandle = (cPrice >= cOpen);
+            var isBullish = (ma5 > ma20 && cPrice > ma5); 
+            var isBearish = (cPrice < ma20);
+            var volLevelText = (volRatio < 1.2) ? "量縮整理" : ((volRatio < 2.0) ? "溫和放量" : "攻擊爆量");
+            var borderColor = "#cbd5e1"; 
+            var summaryTitle = "";
+            
+            if (isBreakout && volRatio >= 1.8) { borderColor = "#dc2626"; summaryTitle = "🎯 強勢帶量過高突破 (波段起漲點)"; } 
+            else if (volRatio >= 2.0 && !isBreakout) { borderColor = "#2563eb"; summaryTitle = "👀 底部異動：爆量結構醞釀中"; } 
+            else if (isBreakout && volRatio < 1.0) { borderColor = "#7c3aed"; summaryTitle = "⚠️ 嚴重量價背離 (高檔無量誘多)"; } 
+            else if (isBreakout && volRatio < 1.8) { borderColor = "#7c3aed"; summaryTitle = "🛑 無量過高假突破"; }
+            else { borderColor = "#475569"; summaryTitle = "☕ 縮量常態盤整區間"; }
+
+            var analysisHTML = "<div class='result-title' style='color:" + borderColor + ";'>" + summaryTitle + "</div>";
+            analysisHTML += "<ul class='analysis-list'>";
+            analysisHTML += "<li><strong>技術指標：</strong> " + (isBullish ? "<span class='badge bg-red'>多頭排列</span>" : (isBearish ? "<span class='badge bg-green'>破線轉弱</span>" : "<span class='badge bg-gray'>結構盤整</span>")) + " " + (isRedCandle ? "<span class='badge bg-red'>紅K線</span>" : "<span class='badge bg-green'>黑K線</span>") + "</li>";
+            analysisHTML += "<li><strong>量能狀況：</strong> " + volLevelText + " (" + volRatio + "倍均量)。<span class='tip-tag' onclick='showTip(\"vol\")'>這是啥?</span></li>";
+
+            var bias = ((cPrice - ma20) / ma20) * 100;
+            if (bias > 12) {
+                analysisHTML += "<li><span class='badge bg-red'>🚨 警示：乖離過大 (+" + bias.toFixed(1) + "%)，短線獲利賣壓強！</span></li>";
+            } else if (bias < -10) {
+                analysisHTML += "<li><span class='badge bg-green'>✨ 機會：乖離過大 (" + bias.toFixed(1) + "%)，留意反彈機會！</span></li>";
+            } 
+
+            if (isBreakout && volRatio < 1.0) {
+                analysisHTML += "<li><strong style='color:#e53e3e;'>⚠️ 量價背離：</strong>無量創新高，主力誘多風險高！</li>";
+            }
+
+            analysisHTML += "</ul>";
+            document.getElementById("lblResult").innerHTML = analysisHTML;
+            document.getElementById("resultContainer").style.borderLeftColor = borderColor;
+            
+            var max3m = globalValidData[0].high; var min3m = globalValidData[0].low;
+            for(var i=0; i<dataLen; i++) {
+                if(globalValidData[i].high > max3m) max3m = globalValidData[i].high;
+                if(globalValidData[i].low < min3m) min3m = globalValidData[i].low;
+            }
+            var positionRatio = (max3m === min3m) ? 50 : ((cPrice - min3m) / (max3m - min3m)) * 100;
+
+            var aiReport = generateAIReport(cPrice, cOpen, cHigh, cLow, estVol, avgVol, ma5, ma20, positionRatio);
+            document.getElementById("aiReportBox").innerHTML = aiReport;
+            
+            var predictResult = analyzeNextDayProbability(globalValidData, ma5, ma20);
+            var predictHtml = "<strong>🔮 隔日走勢預測：</strong>" + predictResult.probHtml + "<br>";
+            predictHtml += "（歷史相似型態樣本數：共符合 " + predictResult.totalPatterns + " 天交易特徵）<br><br>";
+            predictHtml += "<strong>📝 隔日短線策略建議：</strong><br>" + predictResult.advice;
+            document.getElementById("nextDayPredictBox").innerHTML = predictHtml;
+
+            // 執行未來波段趨勢演算，並接收趨勢類型
+            var trendType = analyzeMediumTrend(globalValidData, ma5, ma20);
+
+            // 執行傻瓜溫度計
+            generateNoviceDashboard(cPrice, ma20, parseFloat(volRatio), positionRatio);
+
+            // 執行持股策略評估
+            evalHoldingStrategy(cPrice, cLow, ma20, trendType);
+
+        }
+        // 大盤聯動分析邏輯
+        function performMarketCorrelation(stockChangePercent, marketChange) {
+            const sPercent = parseFloat(stockChangePercent).toFixed(2);
+            const mPercent = parseFloat(marketChange).toFixed(2);
+
+            const diff = parseFloat(sPercent) - parseFloat(mPercent);
+            let analysis = "";
+    
+            // 判斷邏輯
+            if (Math.abs(diff) < 0.5) {
+                analysis = "同步大盤 (隨勢震盪)";
+            } else if (diff > 1.0) {
+                analysis = "強於大盤 (主力逆勢護盤)";
+            } else if (diff < -1.0) {
+                analysis = "弱於大盤 (避險賣壓沉重)";
+            } else {
+                analysis = diff > 0 ? "略強於大盤" : "略弱於大盤";
+            }
+
+            var mIndex = document.getElementById('marketIndex');
+            var mTrend = document.getElementById('marketTrend');
+
+            if(mIndex) {
+                mIndex.innerHTML = `個股: <span style="color:blue;">${sPercent}%</span> | 大盤: <span style="color:red;">${mPercent}%</span>`;
+            }
+            if(mTrend) {
+                mTrend.innerText = analysis;
+            }
+
+            // 自動將分析結果寫入 AI 診斷報告的最下方
+            var aiBox = document.getElementById("aiReportBox");
+            if(aiBox) {
+                aiBox.innerHTML += `<br><br><div style="border-top:1px solid #ddd; padding-top:5px; font-size:0.9em; color:#475569;"><strong>🔍 大盤關聯診斷：</strong>今日個股 ${sPercent}%，大盤 ${mPercent}%。${analysis}。</div>`;
+            }
+        }
+        // 自動檢查處置股 (全自動版)
+        async function checkDispositionAuto(symbol) {
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbyw9bqnaT_oXDx7PRe0gDEl8xpNG8sPzZ4KYYq5kA7zJb6KnXFq81tt2IcjnqUJLZ64Yw/exec";
+            const timestamp = new Date().getTime();
+            try {
+                const response = await fetch(`${GAS_URL}?symbol=${symbol}`);
+                const data = await response.json();
+
+                console.log("收到的日期格式:", data.expiryDate);
+
+                const nameEl = document.getElementById("lblCompanyName");
+
+                if (data && data.isDisposition === true) {
+                    nameEl.innerHTML += ` <div style="font-size:0.8em; color:#991b1b; margin-top:4px;">
+                    ⚠️ 處置期間流動性縮減，請務必使用「限價單」交易！
+                    </div>`;
+
+                    if (!nameEl.innerHTML.includes("處置中")) {
+                        nameEl.innerHTML += ` <span style="color:white; background:red; padding:1px 6px; border-radius:4px; font-size:12px; margin-left:8px; font-weight:bold;">
+                            處置中 (起訖日期: ${data.expiryDate})
+                        </span>`;
+                    }
+                }
+            } catch (e) {
+                console.error("查詢失敗:", e);
+            }
+        }
+
+        function loadInstitutionalData(symbol) {
+
+            var url = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
+            var script = document.createElement('script');
+            script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
+            document.body.appendChild(script);
+        }
+        
+        // 這是全域函式，確保能被 JSONP 呼叫到
+        window.processInstitutionalResult = function(data) {
+            console.log("=== 正在透過舊通道更新 UI 文字 ===");
+
+            //if (window.chipsChart) {
+                //var dataArray = Array.isArray(data) ? data : [data];
+                //window.chipsChart.data.labels = dataArray.map(item => item.date);
+                //window.chipsChart.data.datasets[0].data = dataArray.map(item => parseInt(item.netBuy));
+                //window.chipsChart.data.datasets[0].backgroundColor = dataArray.map(item =>
+                     //parseInt(item.netBuy) >= 0 ? '#ef4444' : '#22c55e'
+                //);
+
+                //window.chipsChart.update();
+                //console.log("籌碼圖表已更新，共", dataArray.length, "筆資料");
+            //}
+
+            var latestData = Array.isArray(data) ? data[data.length - 1] : data;
+            var content = document.getElementById("institutionalContent");
+
+            var box = document.getElementById("institutionalBox");
+
+            if (content && box) {
+                var rawVal = data.netBuy || "0";
+                var dateText = data.date || "";
+
+                var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
+
+                //content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
+                content.innerHTML = `
+                    <div style="font-weight: bold; color: #374151; margin-bottom: 4px;">
+                        💰 三大法人籌碼追蹤
+                    </div>
+                    <div>
+                        外資籌碼 (${dateText})：
+                        <span style="color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'}; font-weight: bold;">
+                            ${displayVal}
+                        </span>
+                    </div>
+                `;
+                box.style.display = "block";
+                box.style.backgroundColor = "#f9fafb";
+                box.style.border = "1px solid #e5e7eb";
+                box.style.borderRadius = "8px";
+                box.style.padding = "10px 15px"; // 上下內距變小，這樣就不會那麼空了
+                box.style.margin = "10px 0";
+                box.style.opacity = "1";
+                console.log("UI 已恢復正常顯示");
+            } else {
+                console.error("找不到 institutionalBox 或 content 元素");
+            }  
+            var box = document.getElementById("institutionalBox");
+            if (box) {
+            box.style.display = "block";
+            box.style.backgroundColor = "#f9fafb"; // 淺灰色背景，增加層次
+            box.style.border = "1px solid #e5e7eb"; // 淺灰色邊框
+            box.style.borderRadius = "8px";         // 圓角，看起來比較現代
+            box.style.padding = "15px";             // 增加內距，不要擠在一起
+            box.style.margin = "15px 0";
+            box.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)"; // 輕微陰影
+            box.style.opacity = "1";
+            box.style.visibility = "visible";
+            box.style.position = "relative"; // 確保不會因為定位跑掉被蓋住
+            //box.style.zIndex = "9999";       // 確保它浮在最上層
+            }
+        };
+
+        window.handleInstitutionalData = function(data) {
+            console.log("=== JSONP 接收成功 ===", data);
+            var content = document.getElementById("institutionalContent");
+            var box = document.getElementById("institutionalBox");
+
+            if (content && box) {
+                var val = data.netBuy || 0;
+                var text = (val === 0 || val === "0") ? "無買賣超" : val + " 張";
+                content.innerHTML = "外資今日買賣超：" + text;
+                box.style.display = "block";
+            }
+ 
+        }
+        async function loadStockData(symbol) {
+            const url = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec?symbol=' + symbol; // 記得換成你的網址
+  
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                console.log("從伺服器收到的原始資料:", data);
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.warn("未收到有效的籌碼歷史陣列");
+                    return;
+                }
+
+                const historyData = data.slice(-20);
+                const labels = historyData.map(item => item.date);
+                const netBuyData = historyData.map(item => parseFloat(item.netBuy));
+
+                if (typeof chipsChart !== 'undefined') {
+                    chipsChart.data.labels = labels;
+                    chipsChart.data.datasets[0].data = netBuyData;
+                    chipsChart.data.datasets[0].backgroundColor = netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e');
+                    chipsChart.update();
+                    console.log("籌碼圖表已更新，目前顯示筆數:", labels.length);
+                }
+            } catch (err) {
+                console.error("更新籌碼圖表失敗", err);
+            }
+        }
+
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>波段突破自動監控系統 (AI演算+外資籌碼分析) V14</h2>
+
+
+        
+        <div class="toolbar">
+            <div class="tool-group">
+                <span>文字：</span>
+                <button class="btn-ctrl" onclick="changeFontSize(1)">A+</button>
+                <button class="btn-ctrl" onclick="changeFontSize(-1)">A-</button>
+            </div>
+            <div class="tool-group">
+                <span>圖表：</span>
+                <button class="btn-ctrl" onclick="changeChartSize(30)">📈+</button>
+                <button class="btn-ctrl" onclick="changeChartSize(-30)">📈-</button>
+            </div>
+        </div>
+
+        <div class="watchlist-group">
+            <select id="selWatchlist" onchange="loadFromWatchlist()">
+                <option value="">-- 我的動態自選股庫 --</option>
+            </select>
+            <div class="notes-area">
+                <label>📝 自訂或覆蓋此股的護城河策略：</label>
+                <textarea id="txtNotes" placeholder="輸入後點擊儲存，可覆蓋內建護城河，建立完全專屬的策略筆記。"></textarea>
+            </div>
+            <div class="btn-action-row">
+                <button class="btn-small btn-add" onclick="addToWatchlist()">儲存/更新</button>
+                <button class="btn-small btn-remove" onclick="removeFromWatchlist()">刪除自選</button>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>股票代號：</label>
+            <input type="text" id="txtSymbol" placeholder="請輸入4碼台股代號 (例: 2317)">
+        </div>
+
+        <div class="input-group cost-input-group">
+            <label>持股成本：</label>
+            <input type="number" id="txtUserCost" step="0.1" placeholder="請輸入您的買進成本價 (留空則不進行持股分析)">
+        </div>
+
+        <button class="btn btn-fetch" onclick="fetchData()">自動抓取最新資料 & 執行 AI 演算</button>
+        
+        <div class="company-header">
+            <span class="label">分析標的：</span>
+            <span id="lblCompanyName" class="name">等待抓取...</span>
+        </div>
+
+
+        <div class="info-grid">
+            <div id="holdingStrategyBox" class="holding-info-box">
+        </div>
+            
+        <div class="next-section-container" style="clear: both; width: 100%; margin-top: 20px;">
+            </div>
+
+        <div id="institutionalWrapper" style="width: 100%; margin-bottom: 10px;">
+            <div id="institutionalBox" class="holding-info-box" style="display:none; border-left: 4px solid #2563eb; width: 100%; box-sizing: border-box;">
+                <div class="auto-info-title" style="color: #2563eb;">💰 三大法人籌碼追蹤</div>
+                <div id="institutionalContent" class="moat-text" style="margin:6px 0;">讀取籌碼中...</div>
+            </div>
+        </div>
+
+        <div id="market-status" style="background: #eef2f7; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; border: 1px solid #d1d9e6; text-align: center;">
+            大盤：<span id="marketIndex">讀取中...</span> |
+            聯動診斷：<span id="marketTrend" style="font-weight: bold; color: #2980b9;">分析中...</span>
+        </div>
+            <div class="novice-info-box">
+                <div class="auto-info-title" style="color:#f97316;">🚦 新手防呆：一眼看懂多空安全區</div>
+                <div id="noviceDashboardBox" class="moat-text">請輸入代號並執行分析...</div>
+            </div>
+
+            <div class="trend-info-box">
+                <div class="auto-info-title color-green">📈 未來中期波段趨勢 (趨勢方向)</div>
+                <div id="mediumTrendBox" class="moat-text">請輸入代號並執行分析...</div>
+            </div>
+
+            <div class="predict-info-box">
+                <div class="auto-info-title color-blue">🔮 隔日股票漲跌統計預測</div>
+                <div id="nextDayPredictBox" class="moat-text">請輸入代號並執行分析...</div>
+            </div>
+
+            <div class="auto-info-box">
+                <div class="auto-info-title color-orange">📌 市場關聯題材與護城河基礎</div>
+                <div id="autoThemesBox" class="themes-container">等待抓取...</div>
+                <div id="autoMoatBox" class="moat-text">等待抓取...</div>
+            </div>
+
+            <div class="ai-info-box">
+                <div class="auto-info-title color-purple">🤖 AI 深度演算診斷報告</div>
+                <div id="aiReportBox" class="moat-text">請輸入代號並執行分析...</div>
+            </div>
+
+            <div class="news-info-box" id="newsContainer" style="display:none; background:#fffdf5; border:1px solid #fde68a; padding:10px; border-radius:6px; border-left:4px solid #eab308; margin-top:10px;">
+                <div class="auto-info-title color-orange">📰 最新相關新聞 (Yahoo 財經)</div>
+                <div id="newsList" style="font-size: 0.95em; line-height: 1.6; color: #334155;"></div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="priceChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="chipsChart"></canvas>
+        </div>
+
+        <div class="grid-layout">
+            <div class="input-group">
+                <label>當前股價：</label>
+                <input type="text" id="txtPrice" readonly>
+            </div>
+            <div class="input-group">
+                <label>今日開盤：</label>
+                <input type="text" id="txtOpen" readonly>
+            </div>
+            <div class="input-group">
+                <label>今日最低：</label>
+                <input type="text" id="txtLow" readonly>
+            </div>
+            <div class="input-group">
+                <label id="lblVolType">今日估量：</label>
+                <input type="text" id="txtVol" readonly>
+            </div>
+            <div class="input-group">
+                <label>5日均量：</label>
+                <input type="text" id="txtAvgVol" readonly>
+            </div>
+            <div class="input-group">
+                <label>20日高點：</label>
+                <input type="text" id="txtHighPrice" readonly>
+            </div>
+            <div class="input-group">
+                <label>月線MA20：</label>
+                <input type="text" id="txtMA20" readonly>
+            </div>
+        </div>
+
+        <div id="resultContainer" class="result-box">
+            <div id="lblResult">等待資料載入...</div>
+        </div>
+    </div>
+</body>
+</html>
