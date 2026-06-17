@@ -683,14 +683,9 @@ function fetchData() {
                         window.priceChart.update();
                         console.log("股價圖表已更新");
                     }
-                    if (window.chipsChart && window.latestChipData) {
-                        window.chipsChart.data.labels = [window.latestChipData.date];
-                        window.chipsChart.data.datasets[0].data = [parseInt(window.latestChipData.netBuy)];
-                        window.chipsChart.update();
-                        console.log("籌碼圖數據已更新");
-                    } else {
-                        console.log("籌碼資料尚未同步，跳過籌碼圖更新");
-                    }
+                    loadStockData(symbolInput);
+
+                    console.log("籌碼資料尚未同步，跳過籌碼圖更新");
 
                 } else {
                     console.error("資料解析後為空");
@@ -1040,17 +1035,15 @@ function fetchData() {
             const response = await fetch(url);
             const data = await response.json();
 
-            if (data.status === "error") return;
+            if (data && data.length > 0 && typeof chipsChart !== 'undefined') {
+                const labels = data.map(item => item.date);
+                const netBuyData = data.map(item => parseFloat(item.netBuy));
 
-            const labels = data.map(item => item.date);
-            const netBuyData = data.map(item => parseFloat(item.netBuy));
-
-            if (typeof chipsChart !== 'undefined') {
                 chipsChart.data.labels = labels;
                 chipsChart.data.datasets[0].data = netBuyData;
                 chipsChart.data.datasets[0].backgroundColor = netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e');
                 chipsChart.update();
-                console.log("籌碼圖表已成功同步更新");
+                console.log("籌碼圖表已更新，共", labels.length, "筆資料");
             }
           } catch (err) {
             console.error("更新籌碼圖表失敗", err);
