@@ -996,7 +996,18 @@ function fetchData() {
 
                 var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
 
-                content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
+                //content.innerHTML = "外資籌碼 (" + dateText + ")：" + displayVal;
+                content.innerHTML = `
+                    <div style="font-weight: bold; color: #374151; margin-bottom: 8px; font-size: 16px;">
+                        💰 三大法人籌碼追蹤
+                    </div>
+                    <div style="font-size: 15px; color: #1f2937;">
+                        外資籌碼 (${dateText})：
+                        <span style="color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'}; font-weight: bold;">
+                            ${displayVal}
+                        </span>
+                    </div>
+                `;
                 box.style.display = "block";
                 box.style.backgroundColor = "transparent";
                 box.style.border = "none";
@@ -1008,11 +1019,19 @@ function fetchData() {
                 console.error("找不到 institutionalBox 或 content 元素");
             }  
             var box = document.getElementById("institutionalBox");
+            if (box) {
             box.style.display = "block";
+            box.style.backgroundColor = "#f9fafb"; // 淺灰色背景，增加層次
+            box.style.border = "1px solid #e5e7eb"; // 淺灰色邊框
+            box.style.borderRadius = "8px";         // 圓角，看起來比較現代
+            box.style.padding = "15px";             // 增加內距，不要擠在一起
+            box.style.margin = "15px 0";
+            box.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)"; // 輕微陰影
             box.style.opacity = "1";
             box.style.visibility = "visible";
             box.style.position = "relative"; // 確保不會因為定位跑掉被蓋住
-            box.style.zIndex = "9999";       // 確保它浮在最上層
+            //box.style.zIndex = "9999";       // 確保它浮在最上層
+            }
         };
 
         window.handleInstitutionalData = function(data) {
