@@ -98,6 +98,9 @@
         var GOOGLE_PROXY_URL = "https://script.google.com/macros/s/AKfycby00Dd0d7v39qBwmqr6wxPHsUiRp69B6v-AoBTj9XTbqytQZBU7MlZYlNdU30pw7F3G/exec"; 
         var INSTITUTIONAL_URL = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
         
+        var isSyncing = false; // 防止重複觸發的鎖
+        var syncQueue = Promise.resolve();
+
         var myWatchlist = [];
         var globalValidData = [];
         var currentChipData = null; // 用來儲存籌碼數據的變數
@@ -113,11 +116,19 @@
         };
 
         async function autoSyncChips(symbol, netBuy, date) {
+
+            if (window.isSyncing) {
+                console.warn("同步程序進行中，已攔截重複請求:", symbol);
+                return;
+            }
+
+            window.isSyncing = true; // 上鎖
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
             console.log("嘗試執行自動同步...");
             try {
                 const params = new URLSearchParams({ symbol, netBuy, date, t: Date.now() }); // 加入時間戳記避免快取
                 const response = await fetch(GAS_URL + '?' + params.toString());
+                if (!response.ok) throw new Error("網路請求失敗");
                 const data = await response.json(); // 這是最新的 3 筆
                 console.log("同步完成，直接繪圖:", data);
 
@@ -132,6 +143,11 @@
                 }
             } catch (e) {
                 console.error("自動同步失敗:", e);
+            } finally {
+                setTimeout(() => {
+                    window.isSyncing = false;
+                    console.log("同步鎖已釋放");
+                }, 500);
             }
         }
 
@@ -1009,12 +1025,11 @@ function fetchData() {
                 var currentSymbol = document.getElementById("txtSymbol").value.toUpperCase().split('.')[0];
                 console.log("偵測到籌碼資料，觸發自動寫入:", currentSymbol, data.netBuy, data.date);
 
-                autoSyncChips(currentSymbol, data.netBuy, data.date);
-            } 
-            if (typeof autoSyncChips === 'function') {
-                autoSyncChips(currentSymbol, data.netBuy, data.date);
-            } else {
-                console.error("autoSyncChips 依然找不到，請檢查函式定義位置！");
+                if (typeof autoSyncChips === 'function') {
+                    autoSyncChips(currentSymbol, data.netBuy, data.date);
+                } else {
+                    console.error("autoSyncChips 函式未定義！");
+                }
             }
             if (content && box) {
                 var rawVal = data.netBuy || "0";
