@@ -703,6 +703,12 @@ function fetchData() {
                 if (typeof processIndicators === 'function') {
                     processIndicators();
                 }
+                var lastCache = localStorage.getItem("fund_cache_" + symbolInput);
+                if (lastCache) {
+                    var lastData = JSON.parse(lastCache);
+                    console.log("偵測到最新法人籌碼，執行自動同步:", lastData);
+                    autoSyncChips(symbolInput, lastData.netBuy, lastData.date);
+                }
             })
             .catch(err => {
                 console.error(err);
@@ -783,7 +789,31 @@ function fetchData() {
                 console.error("Fetch 失敗:", err);
                 window.processInstitutionalResult({ netBuy: "Err", date: "網頁端讀取失敗" });
             });   
-    };     
+
+    };  
+        async function autoSyncChips(symbol, netBuy, date) {
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec';
+            await fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol: symbol, netBuy: netBuy, date: date })
+            });
+            const getUrl = GAS_URL + "?symbol=" + symbol;
+            try {
+                const response = await fetch(getUrl);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    const labels = data.map(d => d.date);
+                    const values = data.map(d => parseFloat(d.netBuy));
+                    if (typeof updateChipsChart === 'function') {
+                        updateChipsChart(labels, values);
+                    }
+                }
+            } catch (e) {
+                console.error("同步更新圖表失敗:", e);
+            }
+        }   
         function saveToSheet(symbol, netBuy, date) {
         // 【重要】請將下方網址替換成你部署 GAS 後得到的 Web App URL
         var scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec"; 
@@ -1019,21 +1049,17 @@ function fetchData() {
             let params = new URLSearchParams();
             params.append('symbol', symbol);
 
-            if (newDate && newDate !== "" && newNetBuy !== null && newNetBuy !== undefined) {
+            if (newDate && newNetBuy !== null) {
                 params.append('date', newDate);
                 params.append('netBuy', newNetBuy);
-                console.log("正在嘗試寫入資料:", newDate, newNetBuy);
+                console.log("嘗試寫入:", newDate, newNetBuy);
             }
 
             try {
                 const response = await fetch(url + '?' + params.toString());
                 const data = await response.json();
-
-                const validData = data.filter(item => item.date && item.date.trim() !== "");
-                console.log("後端回傳資料(已過濾空值):", validData);
                
-                const labels = data.map(item => item.date);
-                const netBuyData = data.map(item => parseFloat(item.netBuy));
+                const validData = data.filter(item => item.date && item.date !== "");
 
                 if (typeof chipsChart !== 'undefined') {
                     chipsChart.data.labels = labels;
@@ -1047,6 +1073,34 @@ function fetchData() {
             }
         }
 
+        // 1. 解析 CSV 並提取數據
+        function processCSV(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            const symbol = document.getElementById('txtStockCode') ? document.getElementById('txtStockCode').value : "2330"; // 請確認您的代號欄位ID
+
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+        
+                // 假設 CSV 格式為：日期, 買賣超 (請依據您的 CSV 實際格式調整)
+                // 跳過標題列 i=1
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split(',');
+                    if (cols.length >= 2) {
+                        const date = cols[0].trim();
+                        const netBuy = cols[1].trim();
+                
+                        // 找到一筆就呼叫寫入函式
+                        if (date && netBuy) {
+                            console.log("偵測到 CSV 資料:", date, netBuy);
+                            loadStockData(symbol, date, netBuy);
+                        }
+                    }
+                }
+            };
+            reader.readAsText(file);
+        }
     </script>
 </head>
 <body>
@@ -1147,6 +1201,11 @@ function fetchData() {
                 <div class="auto-info-title color-orange">📰 最新相關新聞 (Yahoo 財經)</div>
                 <div id="newsList" style="font-size: 0.95em; line-height: 1.6; color: #334155;"></div>
             </div>
+        </div>
+
+        <div style="margin: 10px 0; text-align: center;">
+            <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="processCSV(event)">
+            <button onclick="document.getElementById('csvFile').click()" style="padding: 10px 20px;">匯入籌碼 CSV</button>
         </div>
 
         <div class="chart-container">
