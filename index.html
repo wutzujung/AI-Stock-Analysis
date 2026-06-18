@@ -118,8 +118,9 @@
             try {
                 const params = new URLSearchParams({ symbol, netBuy, date, t: Date.now() }); // 加入時間戳記避免快取
                 const response = await fetch(GAS_URL + '?' + params.toString());
-                const result = await response.text();
-                console.log("同步完成:", result);
+                const data = await response.json(); // 這是最新的 3 筆
+                console.log("同步完成，直接繪圖:", data);
+                updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
                 return true;
             } catch (e) {
                 console.error("自動同步失敗:", e);
