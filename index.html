@@ -983,22 +983,25 @@ function fetchData() {
                 var rawVal = data.netBuy || "0";
                 var displayVal = (rawVal === "busy" || rawVal === "Err" || isNaN(parseFloat(rawVal))) ? "等待資料更新..." : rawVal + " 張";
 
-                content.innerHTML = `
+                contentElement.innerHTML = `
                     <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
                     <div style="margin:0; padding:0; font-size: 16px; font-weight: bold; color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'};">${displayVal}</div>
                 `;
-            }
+            
 
-            box.style.display = "block";
-            box.style.backgroundColor = "#f9fafb"; // 淺灰色背景，增加層次
-            box.style.border = "1px solid #e5e7eb"; // 淺灰色邊框
-            box.style.borderRadius = "8px";         // 圓角，看起來比較現代
-            box.style.padding = "5px 15px";
-            box.style.margin = "5px 0";
-            box.style.opacity = "1";
-            box.style.visibility = "visible";
-            box.style.position = "relative"; // 確保不會因為定位跑掉被蓋住
-        }
+            boxElement.style.display = "block";
+            boxElement.style.backgroundColor = "#f9fafb"; // 淺灰色背景，增加層次
+            boxElement.style.border = "1px solid #e5e7eb"; // 淺灰色邊框
+            boxElement.style.borderRadius = "8px";         // 圓角，看起來比較現代
+            boxElement.style.padding = "5px 15px";
+            boxElement.style.margin = "5px 0";
+            boxElement.style.opacity = "1";
+            boxElement.style.visibility = "visible";
+            boxElement.style.position = "relative"; // 確保不會因為定位跑掉被蓋住
+            } else {
+            console.error("找不到 institutionalContent 或 institutionalBox 元素！");
+            }
+        };
 
         async function fetchDataForChart(symbol) {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
