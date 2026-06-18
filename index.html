@@ -957,21 +957,22 @@ function fetchData() {
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = async function(data) {
             if (!data) return;
+            console.log("處理籌碼資料:", data);
 
             var currentSymbol = document.getElementById("txtSymbol") ? document.getElementById("txtSymbol").value.trim() : "";
-            var dateText = (data.date && data.date !== "") ? data.date : "今日";
+            var dateText = (data.date && data.date.length > 0) ? data.date : "今日";
             var rawVal = data.netBuy || "0";
             var netBuyVal = parseFloat(data.netBuy);
-            var isValid = !isNaN(netBuyVal) && String(data.netBuy) !== "Busy" && String(data.netBuy) !== "busy" && String(data.netBuy) !== "Err";
+            var isValid = !isNaN(netBuyVal) && String(data.netBuy).toLowerCase() !== "busy" && String(data.netBuy).toLowerCase() !== "err";
 
             if (isValid) {
                 var syncKey = "sync_" + currentSymbol + "_" + dateText;
                 if (!sessionStorage.getItem(syncKey)) {
-                    console.log("偵測到有效數據，執行寫入:", netBuyVal, "日期:", dateText);
+                    console.log("偵測到有效數據，寫入試算表:", netBuyVal);
                     await saveToSheet(currentSymbol, netBuyVal, dateText);
                     sessionStorage.setItem(syncKey, "true");
                     console.log("等待寫入生效...");
-                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                 }
             }
 
@@ -981,7 +982,8 @@ function fetchData() {
             var boxElement = document.getElementById("institutionalBox");
   
             if (contentElement && boxElement) {
-                var displayVal = isValid ? netBuyVal + " 張" : "等待資料更新...";
+                var displayVal = isValid ? netBuyVal.toLocaleString() + " 張" : "等待資料更新...";
+                var color = (isValid && netBuyVal >= 0) ? "#ef4444" : "#22c55e";
 
                 contentElement.innerHTML = `
                     <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
@@ -999,7 +1001,7 @@ function fetchData() {
             boxElement.style.visibility = "visible";
             boxElement.style.position = "relative"; // 確保不會因為定位跑掉被蓋住
             } else {
-            console.error("找不到 institutionalContent 或 institutionalBox 元素！");
+                console.error("找不到籌碼顯示容器，請檢查 HTML ID 設定");
             }
         };
 
