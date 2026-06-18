@@ -805,30 +805,35 @@ function fetchData() {
     };  
         async function loadStockData(symbol, newDate = null, newNetBuy = null) {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec';
-            let params = new URLSearchParams();
-            params.append('symbol', symbol);
-            params.append('t', new Date().getTime()); // 強制變更網址結構
-
-            if (newDate && newNetBuy !== null) {
-                params.append('date', newDate);
-                params.append('netBuy', newNetBuy);
-            }
+            let url = `${baseUrl}?symbol=${symbol}&t=${Date.now()}`;
 
             try {
-                const response = await fetch(url + '?' + params.toString(), {
-                    cache: 'no-store'
-                });
-                
-                let text = await response.text(); // 1. 先讀取純文字
+                const response = await fetch(url, { cache: 'no-store' });
+                let text = await response.text();
+
                 if (text.trim().startsWith("callback(")) {
                     text = text.substring(text.indexOf("(") + 1, text.lastIndexOf(")"));
                 }
                 const data = JSON.parse(text);
-                const validData = Array.isArray(data) ? data.filter(item => item.date && item.date.trim() !== "") : [];
-                const labels = validData.map(item => item.date);
+                console.log("【從 GAS 抓到的原始資料筆數】:", data.length); // 這裡查看是否為 3 筆
+                console.table(data); // 這裡直接在 Console 表格化印出資料
+                const validData = Array.isArray(data) ? data.filter(item => {
+                    const cleanDate = item.date.replace(/'/g, '');
+                    return cleanDate && cleanDate.trim() !== "";
+                }) : [];
+
+                const labels = validData.map(item => item.date.replace(/'/g, ''));
                 const netBuyData = validData.map(item => parseFloat(item.netBuy));
-            } catch (e) {
-                console.error("解析失敗:", err);
+
+                if (typeof chipsChart !== 'undefined') {
+                    chipsChart.data.labels = labels;
+                    chipsChart.data.datasets[0].data = netBuyData;
+                    chipsChart.data.datasets[0].backgroundColor = netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e');
+                    chipsChart.update();
+                    console.log("圖表已更新至最新資料，總筆數:", labels.length);
+                }
+            } catch (err) {
+                console.error("讀取失敗:", err);
             }
  
             setTimeout(async () => {
