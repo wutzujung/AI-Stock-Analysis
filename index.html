@@ -972,6 +972,9 @@ function fetchData() {
             }
 
             fetchDataForChart(currentSymbol);
+
+            var contentBox = document.getElementById("institutionalContent");
+            var box = document.getElementById("institutionalBox");
   
             if (content && box) {
                 var rawVal = data.netBuy;
