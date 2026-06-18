@@ -1059,17 +1059,21 @@ function fetchData() {
                 const response = await fetch(url + '?' + params.toString());
                 const data = await response.json();
                
-                const validData = data.filter(item => item.date && item.date !== "");
+                const validData = Array.isArray(data) ? data.filter(item => item.date && item.date.trim() !== "") : [];
+                const labels = validData.map(item => item.date);
+                const netBuyData = validData.map(item => parseFloat(item.netBuy));
 
                 if (typeof chipsChart !== 'undefined') {
                     chipsChart.data.labels = labels;
                     chipsChart.data.datasets[0].data = netBuyData;
                     chipsChart.data.datasets[0].backgroundColor = netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e');
                     chipsChart.update();
-                    console.log("籌碼圖表已更新，目前顯示筆數:", labels.length);
+                    console.log("籌碼圖表已更新，有效筆數:", labels.length);
+                } else {
+                    console.warn("chipsChart 未定義，無法更新圖表");
                 }
             } catch (err) {
-                console.error("更新籌碼圖表失敗", err);
+                console.error("更新籌碼圖表失敗 (ReferenceError 修復版):", err);
             }
         }
 
