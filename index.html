@@ -95,6 +95,7 @@
     </style>
 
     <script type="text/javascript">
+        var isSyncing = false; // 這是防止重複寫入的鎖
         window.isSyncing = false;
         window.lastSyncData = "";
         var GOOGLE_PROXY_URL = "https://script.google.com/macros/s/AKfycby00Dd0d7v39qBwmqr6wxPHsUiRp69B6v-AoBTj9XTbqytQZBU7MlZYlNdU30pw7F3G/exec"; 
@@ -120,7 +121,7 @@
         async function autoSyncChips(symbol, netBuy, date) {
 
             if (window.isSyncing) {
-                console.warn("系統同步中，忽略重複請求");
+                console.warn("系統同步中，攔截請求:", symbol);
                 return;
             }
 
@@ -145,7 +146,7 @@
                 console.log("同步完成，直接繪圖:", data);
 
                 if (Array.isArray(data)) {
-                    console.log("同步完成，繪圖筆數:", data.length);
+                    console.log("同步完成，執行繪圖。資料筆數:", data.length);
                     updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
                 }
             } catch (e) {
@@ -153,7 +154,6 @@
             } finally {
                 setTimeout(() => {
                     window.isSyncing = false;
-                    window.lastSyncData = ""; // 清除重複檢測，允許下一次不同的資料輸入
                 }, 1000);
             }
         }
@@ -754,84 +754,22 @@ function fetchData() {
             });           
         }
         window.loadInstitutionalData = function(symbol) {
-            var cacheKey = "fund_cache_" + symbol;
-            var cachedData = localStorage.getItem(cacheKey);
-            var now = new Date().getTime();
-            var TWELVE_MINUTES = 30 * 60 * 1000;
+            console.log("觸發籌碼抓取: " + symbol);
+            var url = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
 
-            if (cachedData) {
-                try {
-                    var parsed = JSON.parse(cachedData);
-                    if ((now - parsed.timestamp) < TWELVE_MINUTES) {
-                        console.log("從快取讀取籌碼 (30分內):", parsed);
-                        window.processInstitutionalResult(parsed);
-                        return;
-                        }
-                } catch (e) {
-                    console.warn("快取格式錯誤，清除中...");
-                    localStorage.removeItem(cacheKey);
-                }
-            }
+            var oldScript = document.getElementById('inst-script');
+            if(oldScript) oldScript.remove();
 
-            var url = "/api/getdata";
-                
-            fetch(url)
-                .then(res => res.json())
-                .then(json => {
-                    if (!json || !json.data) throw new Error("無效資料");
-
-                    var binaryString = atob(json.data);
-                    var bytes = new Uint8Array(binaryString.length);
-                    for (var i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-
-                    var decoder = new TextDecoder('big5');
-                    var csvText = decoder.decode(bytes);
-                    var lines = csvText.split('\n');
-
-                    var dateStr = lines[0] ? lines[0].replace(/"/g, "").replace("三大法人買賣超日報", "").trim() : "讀取失敗";
-                    var found = false;
-                    for (var i = 2; i < lines.length; i++) {
-                        if (lines[i].indexOf('"' + symbol + '"') !== -1) {
-                            var cols = lines[i].split('","');
-                            var rawValue = cols[cols.length - 1].replace(/"/g, "").replace(/,/g, "").replace(/#/g, "").trim();
-                            var shares = parseInt(rawValue);
-
-                            if (!isNaN(shares)) {
-                                var lots = Math.round(shares / 1000);
-
-                                var result = {
-                                    netBuy: (lots !== undefined && lots !== null) ? lots.toString() : "0",
-                                    date: dateStr,
-                                    timestamp: now
-                                };
-                                //localStorage.setItem(cacheKey, JSON.stringify(result));
-
-                                saveToSheet(symbol, result.netBuy, result.date);
-
-                                window.processInstitutionalResult(result);
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!found) {
-                        var noData = { netBuy: "0", date: dateStr, timestamp: now };
-                        localStorage.setItem(cacheKey, JSON.stringify(noData));
-
-                        saveToSheet(symbol, noData.netBuy, noData.date);
-
-                        window.processInstitutionalResult(noData);
-                    }
-            })
-            .catch(err => {
-                console.error("Fetch 失敗:", err);
-                window.processInstitutionalResult({ netBuy: "Err", date: "網頁端讀取失敗" });
-            });   
-
-    };  
+            var script = document.createElement('script');
+            script.id = 'inst-script';
+            script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
+            document.body.appendChild(script);
+        };
  
     
         function saveToSheet(symbol, netBuy, date) {
+            if (isSyncing) return;
+            isSyncing = true;
         // 【重要】請將下方網址替換成你部署 GAS 後得到的 Web App URL
         var scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec"; 
     
@@ -844,8 +782,14 @@ function fetchData() {
                 netBuy: netBuy, 
                 date: date 
             })
-        }).then(() => console.log("籌碼已成功同步至 Google Sheet"))
-          .catch(err => console.error("寫入 Sheet 失敗:", err));
+        }).then(() => {
+            console.log("籌碼成功寫入 Sheet");
+            setTimeout(() => { isSyncing = false; }, 2000); // 2秒後解鎖
+        })
+          .catch(err => {
+            console.error("寫入失敗:", err);
+            isSyncing = false;
+        });
     }
 
         function getMA(days) {
@@ -1020,21 +964,28 @@ function fetchData() {
         
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = function(data) {
+            if (!data || data.netBuy === "Err") return;
+
+            var currentSymbol = document.getElementById("txtSymbol").value.trim();
+            var dateText = data.date || "未知日期";
+
+            var syncKey = "sync_" + currentSymbol + "_" + dateText;
+            var isAlreadySynced = sessionStorage.getItem(syncKey);
+            if (!isAlreadySynced) {
+                console.log("偵測到新籌碼資料，觸發自動寫入:", currentSymbol, data.netBuy, dateText);
+                saveToSheet(currentSymbol, data.netBuy, dateText);
+                if (typeof autoSyncChips === 'function') {
+                    autoSyncChips(currentSymbol, data.netBuy, dateText);
+                }
+                sessionStorage.setItem(syncKey, "true");
+            } else {
+                console.log("此筆資料已同步過，略過寫入動作。");
+            }
             var content = document.getElementById("institutionalContent");
             var box = document.getElementById("institutionalBox");
-            if (data && data.netBuy && data.netBuy !== "Err" && data.date) {
-                var currentSymbol = document.getElementById("txtSymbol").value.toUpperCase().split('.')[0];
-                console.log("偵測到籌碼資料，觸發自動寫入:", currentSymbol, data.netBuy, data.date);
-
-                if (typeof autoSyncChips === 'function') {
-                    autoSyncChips(currentSymbol, data.netBuy, data.date);
-                } else {
-                    console.error("autoSyncChips 函式未定義！");
-                }
-            }
+  
             if (content && box) {
                 var rawVal = data.netBuy || "0";
-                var dateText = data.date || "";
                 var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
 
                 content.innerHTML = `
@@ -1043,20 +994,16 @@ function fetchData() {
                 `;
             }
 
-            var box = document.getElementById("institutionalBox");
-            if (box) {
             box.style.display = "block";
             box.style.backgroundColor = "#f9fafb"; // 淺灰色背景，增加層次
             box.style.border = "1px solid #e5e7eb"; // 淺灰色邊框
             box.style.borderRadius = "8px";         // 圓角，看起來比較現代
             box.style.padding = "5px 15px";
             box.style.margin = "5px 0";
-            box.style.boxShadow = "none"; // 建議暫時移除陰影，看看空間是否為陰影造成的
             box.style.opacity = "1";
             box.style.visibility = "visible";
             box.style.position = "relative"; // 確保不會因為定位跑掉被蓋住
             }
-        };
 
         window.handleInstitutionalData = function(data) {
             console.log("=== JSONP 接收成功 ===", data);
