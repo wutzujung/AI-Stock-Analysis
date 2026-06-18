@@ -973,8 +973,9 @@ function fetchData() {
             var box = document.getElementById("institutionalBox");
   
             if (content && box) {
-                var rawVal = data.netBuy || "0";
-                var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
+                var rawVal = data.netBuy;
+                var displayVal = (rawVal === "busy" || rawVal === "Err" || !rawVal) ? "資料更新中" : rawVal + " 張";
+                var dateText = data.date || "未知日期";
 
                 content.innerHTML = `
                     <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
