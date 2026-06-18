@@ -968,24 +968,46 @@ function fetchData() {
                 sessionStorage.setItem(syncKey, "true");
             }
             fetchDataForChart(currentSymbol);
+                
+            var content = document.getElementById("institutionalContent");
+            var box = document.getElementById("institutionalBox");
+  
+            if (content && box) {
+                var rawVal = data.netBuy || "0";
+                var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
+
+                content.innerHTML = `
+                    <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
+                    <div style="margin:0; padding:0; font-size: 16px; font-weight: bold; color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'};">${displayVal}</div>
+                `;
+            }
+
+            box.style.display = "block";
+            box.style.backgroundColor = "#f9fafb"; // 淺灰色背景，增加層次
+            box.style.border = "1px solid #e5e7eb"; // 淺灰色邊框
+            box.style.borderRadius = "8px";         // 圓角，看起來比較現代
+            box.style.padding = "5px 15px";
+            box.style.margin = "5px 0";
+            box.style.opacity = "1";
+            box.style.visibility = "visible";
+            box.style.position = "relative"; // 確保不會因為定位跑掉被蓋住
         }
-      
+
         async function fetchDataForChart(symbol) {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
-
             try {
                 const response = await fetch(`${GAS_URL}?symbol=${symbol}&t=${Date.now()}`);
                 const data = await response.json();
 
-                if (Array.isArray(data) && typeof updateChipsChart === 'function') {
-                    console.log("成功讀取圖表資料，筆數:", data.length);
+                console.log("fetchDataForChart 抓到的資料:", data);
+
+                if (Array.isArray(data)) {
                     updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
                 }
             } catch (e) {
-                console.error("更新圖表時發生錯誤:", e);
+                console.error("抓取失敗:", e);
             }
         }
-
         window.handleInstitutionalData = function(data) {
             console.log("=== JSONP 接收成功 ===", data);
             var content = document.getElementById("institutionalContent");
