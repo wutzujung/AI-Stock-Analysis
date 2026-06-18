@@ -1014,12 +1014,12 @@ function fetchData() {
  
         }
         async function loadStockData(symbol, newDate = null, newNetBuy = null) {
-            console.log("現在執行的 loadStockData 是最新版本");
+            console.log("執行 loadStockData，寫入模式:", (newDate ? "ON" : "OFF"));
             let url = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
             let params = new URLSearchParams();
             params.append('symbol', symbol);
 
-            if (newDate && newNetBuy !== null) {
+            if (newDate && newDate !== "" && newNetBuy !== null && newNetBuy !== undefined) {
                 params.append('date', newDate);
                 params.append('netBuy', newNetBuy);
                 console.log("正在嘗試寫入資料:", newDate, newNetBuy);
@@ -1029,7 +1029,8 @@ function fetchData() {
                 const response = await fetch(url + '?' + params.toString());
                 const data = await response.json();
 
-                console.log("後端回傳資料:", data);
+                const validData = data.filter(item => item.date && item.date.trim() !== "");
+                console.log("後端回傳資料(已過濾空值):", validData);
                
                 const labels = data.map(item => item.date);
                 const netBuyData = data.map(item => parseFloat(item.netBuy));
