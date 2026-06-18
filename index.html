@@ -793,27 +793,16 @@ function fetchData() {
     };  
         async function autoSyncChips(symbol, netBuy, date) {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec';
-            console.log("準備寫入數據 (極簡模式):", { symbol, netBuy, date });
+            const params = new URLSearchParams({ symbol, netBuy, date });
 
             try {
-                const params = new URLSearchParams({
-                    symbol: symbol,
-                    netBuy: netBuy,
-                    date: date
-                });
-                await fetch(GAS_URL + '?' + params.toString(), {
-                    method: 'GET',
-                    mode: 'no-cors'
-                });
-
-                console.log("寫入指令已送出，等待 1.5 秒後重新讀取最新數據...");
-
+                await fetch(GAS_URL + '?' + params.toString(), { mode: 'no-cors' });
+                console.log("寫入指令已送出，等待重新載入...");
                 setTimeout(async () => {
                     await loadStockData(symbol);
-                    console.log("資料已強制重載完畢");
                 }, 1500);
             } catch (e) {
-                console.error("同步操作異常:", e);
+                console.error("同步失敗:", e);
             }
  
             setTimeout(async () => {
