@@ -956,26 +956,29 @@ function fetchData() {
         
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = async function(data) {
+            console.log("--- 偵測到的原始數據 ---", data);
+            if (!data) return;
 
-            var extractedDate = data.date;
-            if (!extractedDate || extractedDate === "") {
-                var dateElement = document.getElementById("dateDisplay");
-                extractedDate = dateElement ? dateElement.innerText.trim() : null;
-            }
+            var currentSymbol = document.getElementById("txtSymbol").value.trim();
 
-            var dateText = (extractedDate && extractedDate !== "") ? extractedDate : "今日";
+            var rawVal = data.netBuy || "0";
+            var netBuyVal = parseFloat(data.netBuy);
+            var isValid = !isNaN(netBuyVal) && data.netBuy !== "Busy" && data.netBuy !== "busy" && data.netBuy !== "Err";
+
+            var dateText = (data.date && data.date !== "") ? data.date : "今日";
+            console.log("當前使用的日期:", dateText);
 
             if (isValid) {
                 var syncKey = "sync_" + currentSymbol + "_" + dateText;
                 if (!sessionStorage.getItem(syncKey)) {
-
+                    console.log("偵測到有效數據，執行寫入:", netBuyVal, "日期:", dateText);
                     await saveToSheet(currentSymbol, netBuyVal, dateText);
                     sessionStorage.setItem(syncKey, "true");
-
+                    console.log("等待寫入生效...");
                     await new Promise(resolve => setTimeout(resolve, 1500));
                 }
             } else {
-                console.warn("當前資料為 BUSY 或無效，跳過寫入");
+                console.warn("當前資料無效或忙碌中，跳過寫入");
             }
 
             fetchDataForChart(currentSymbol);
@@ -984,7 +987,7 @@ function fetchData() {
             var boxElement = document.getElementById("institutionalBox");
   
             if (contentElement && boxElement) {
-                var displayVal = (rawVal === "Busy" || rawVal === "busy" || isNaN(parseFloat(rawVal))) ? "等待資料更新..." : rawVal + " 張";
+                var displayVal = isValid ? netBuyVal + " 張" : "等待資料更新...";
 
                 contentElement.innerHTML = `
                     <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
