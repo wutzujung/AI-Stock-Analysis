@@ -766,7 +766,7 @@ function fetchData() {
                                     date: dateStr,
                                     timestamp: now
                                 };
-                                localStorage.setItem(cacheKey, JSON.stringify(result));
+                                //localStorage.setItem(cacheKey, JSON.stringify(result));
 
                                 saveToSheet(symbol, result.netBuy, result.date);
 
@@ -791,18 +791,22 @@ function fetchData() {
             });   
 
     };  
-        async function autoSyncChips(symbol, netBuy, date) {
+        async function loadStockData(symbol, newDate = null, newNetBuy = null) {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec';
-            const params = new URLSearchParams({ symbol, netBuy, date });
+            let params = new URLSearchParams({ symbol });
 
             try {
-                await fetch(GAS_URL + '?' + params.toString(), { mode: 'no-cors' });
-                console.log("寫入指令已送出，等待重新載入...");
-                setTimeout(async () => {
-                    await loadStockData(symbol);
-                }, 1500);
+                const response = await fetch(url + '?' + params.toString());
+                let text = await response.text(); // 1. 先讀取純文字
+                if (text.trim().startsWith("callback(")) {
+                    text = text.substring(text.indexOf("(") + 1, text.lastIndexOf(")"));
+                }
+                const data = JSON.parse(text);
+                const validData = Array.isArray(data) ? data.filter(item => item.date && item.date.trim() !== "") : [];
+                const labels = validData.map(item => item.date);
+                const netBuyData = validData.map(item => parseFloat(item.netBuy));
             } catch (e) {
-                console.error("同步失敗:", e);
+                console.error("解析失敗:", err);
             }
  
             setTimeout(async () => {
@@ -815,6 +819,7 @@ function fetchData() {
                 }
             }, 1000);
         }   
+    
         function saveToSheet(symbol, netBuy, date) {
         // 【重要】請將下方網址替換成你部署 GAS 後得到的 Web App URL
         var scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec"; 
