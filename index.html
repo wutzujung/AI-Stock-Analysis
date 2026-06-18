@@ -740,12 +740,6 @@ function fetchData() {
                 if (typeof processIndicators === 'function') {
                     processIndicators();
                 }
-                var lastCache = localStorage.getItem("fund_cache_" + symbolInput);
-                if (lastCache) {
-                    var lastData = JSON.parse(lastCache);
-                    console.log("偵測到最新法人籌碼，執行自動同步:", lastData);
-                    autoSyncChips(symbolInput, lastData.netBuy, lastData.date);
-                }
             })
             .catch(err => {
                 console.error(err);
