@@ -125,24 +125,16 @@
                 return;
             }
 
-            const syncSignature = `${symbol}_${netBuy}_${date}`;
-            if (window.lastSyncData === syncSignature) {
-                console.warn("偵測到完全重複的資料請求，已攔截");
-                return;
-            }
-
             window.isSyncing = true; // 上鎖
-            window.lastSyncData = syncSignature;
-
-            console.log("開始同步程序:", symbol, netBuy, date);
+            console.log("開始同步繪圖資料...");
 
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
             console.log("嘗試執行自動同步...");
             try {
-                const params = new URLSearchParams({ symbol, netBuy, date, t: Date.now() }); // 加入時間戳記避免快取
+                const params = new URLSearchParams({ symbol: symbol, t: Date.now() });
                 const response = await fetch(GAS_URL + '?' + params.toString());
 
-                const data = await response.json(); // 這是最新的 3 筆
+                const data = await response.json();
                 console.log("同步完成，直接繪圖:", data);
 
                 if (Array.isArray(data)) {
@@ -970,40 +962,29 @@ function fetchData() {
             var dateText = data.date || "未知日期";
 
             var syncKey = "sync_" + currentSymbol + "_" + dateText;
-            var isAlreadySynced = sessionStorage.getItem(syncKey);
-            if (!isAlreadySynced) {
-                console.log("偵測到新籌碼資料，觸發自動寫入:", currentSymbol, data.netBuy, dateText);
-                saveToSheet(currentSymbol, data.netBuy, dateText);
-                if (typeof autoSyncChips === 'function') {
-                    autoSyncChips(currentSymbol, data.netBuy, dateText);
-                }
+
+            if (!sessionStorage.getItem(syncKey)) {
+                saveToSheet(currentSymbol, data.netBuy, data.date);
                 sessionStorage.setItem(syncKey, "true");
-            } else {
-                console.log("此筆資料已同步過，略過寫入動作。");
             }
-            var content = document.getElementById("institutionalContent");
-            var box = document.getElementById("institutionalBox");
-  
-            if (content && box) {
-                var rawVal = data.netBuy || "0";
-                var displayVal = (rawVal === "0" || rawVal === "Err") ? "無買賣超" : rawVal + " 張";
+            fetchDataForChart(currentSymbol);
+        }
+      
+        async function fetchDataForChart(symbol) {
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
 
-                content.innerHTML = `
-                    <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
-                    <div style="margin:0; padding:0; font-size: 16px; font-weight: bold; color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'};">${displayVal}</div>
-                `;
-            }
+            try {
+                const response = await fetch(`${GAS_URL}?symbol=${symbol}&t=${Date.now()}`);
+                const data = await response.json();
 
-            box.style.display = "block";
-            box.style.backgroundColor = "#f9fafb"; // 淺灰色背景，增加層次
-            box.style.border = "1px solid #e5e7eb"; // 淺灰色邊框
-            box.style.borderRadius = "8px";         // 圓角，看起來比較現代
-            box.style.padding = "5px 15px";
-            box.style.margin = "5px 0";
-            box.style.opacity = "1";
-            box.style.visibility = "visible";
-            box.style.position = "relative"; // 確保不會因為定位跑掉被蓋住
+                if (Array.isArray(data) && typeof updateChipsChart === 'function') {
+                    console.log("成功讀取圖表資料，筆數:", data.length);
+                    updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
+                }
+            } catch (e) {
+                console.error("更新圖表時發生錯誤:", e);
             }
+        }
 
         window.handleInstitutionalData = function(data) {
             console.log("=== JSONP 接收成功 ===", data);
