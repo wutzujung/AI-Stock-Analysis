@@ -805,7 +805,7 @@ function fetchData() {
     };  
         async function loadStockData(symbol, newDate = null, newNetBuy = null) {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
-            let url = `${baseUrl}?symbol=${symbol}&t=${Date.now()}`;
+            let url = `${GAS_URL}?symbol=${symbol}&t=${Date.now()}`;
 
             try {
                 const response = await fetch(url, { cache: 'no-store' });
@@ -829,22 +829,14 @@ function fetchData() {
                     chipsChart.data.labels = labels;
                     chipsChart.data.datasets[0].data = netBuyData;
                     chipsChart.data.datasets[0].backgroundColor = netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e');
-                    chipsChart.update();
+                    chipsChart.update('none'); // 強制更新且不使用動畫，避免卡頓
                     console.log("圖表已更新至最新資料，總筆數:", labels.length);
+                } else if (typeof updateChipsChart === 'function') {
+                    updateChipsChart(labels, netBuyData);
                 }
             } catch (err) {
                 console.error("讀取失敗:", err);
             }
- 
-            setTimeout(async () => {
-                const getUrl = GAS_URL + "?symbol=" + symbol;
-                const res = await fetch(getUrl);
-                const data = await res.json();
-                console.log("從 GAS 拿到的完整陣列:", data);
-                if (Array.isArray(data)) {
-                    updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
-                }
-            }, 1000);
         }   
     
         function saveToSheet(symbol, netBuy, date) {
