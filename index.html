@@ -120,11 +120,18 @@
                 const response = await fetch(GAS_URL + '?' + params.toString());
                 const data = await response.json(); // 這是最新的 3 筆
                 console.log("同步完成，直接繪圖:", data);
-                updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
-                return true;
+
+                if (data && data.error) {
+                    console.error("GAS 錯誤:", data.error);
+                    return;
+                }
+
+                if (Array.isArray(data)) {
+                    console.log("同步完成，直接繪圖:", data);
+                    updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
+                }
             } catch (e) {
                 console.error("自動同步失敗:", e);
-                return false;
             }
         }
 
