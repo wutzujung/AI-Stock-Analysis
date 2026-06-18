@@ -956,13 +956,15 @@ function fetchData() {
         
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = async function(data) {
+            console.log("--- 偵測到的原始數據 ---", data); // <--- 加入這行檢查
+
             if (!data) return;
 
             var currentSymbol = document.getElementById("txtSymbol").value.trim();
-            var dateText = data.date || "未知日期";
+            var netBuyVal = parseFloat(data.netBuy);
 
-            var isValid = data.netBuy && data.netBuy !== "Err" && data.netBuy !== "busy" && !isNaN(parseFloat(data.netBuy));
-             
+            var isValid = (data.netBuy !== "Err" && data.netBuy !== "busy" && !isNaN(netBuyVal));
+            console.log("數據是否有效:", isValid, "數值:", netBuyVal); // <--- 加入這行檢查
             if (isValid) {
                 var syncKey = "sync_" + currentSymbol + "_" + data.date;
                 if (!sessionStorage.getItem(syncKey)) {
