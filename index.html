@@ -793,22 +793,27 @@ function fetchData() {
     };  
         async function autoSyncChips(symbol, netBuy, date) {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec';
-            console.log("準備發送 POST 到 GAS:", { symbol, netBuy, date });
-            const params = new URLSearchParams({
-                symbol: symbol,
-                date: date,
-                netBuy: netBuy
-            });
-            try {
-                const response = await fetch(GAS_URL + '?' + params.toString());
-                const data = await response.json();
+            console.log("準備寫入數據:", { symbol, netBuy, date });
 
-                if (Array.isArray(data) && typeof updateChipsChart === 'function') {
-                    updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
-                    console.log("寫入成功，圖表已更新");
-                }
+            try {
+                const params = new URLSearchParams({
+                    symbol: symbol,
+                    netBuy: netBuy,
+                    date: date
+                });
+                await fetch(GAS_URL + '?' + params.toString(), {
+                    method: 'GET',
+                    mode: 'no-cors'
+                });
+
+                console.log("寫入指令已發送，等待 1 秒刷新...");
+
+                setTimeout(() => {
+                    loadStockData(symbol);
+                }, 1000);
             } catch (e) {
-                console.error("自動同步失敗:", e);
+                console.error("同步操作時發生錯誤 (此錯誤不影響寫入):", e);
+                loadStockData(symbol);
             }
  
             setTimeout(async () => {
