@@ -112,6 +112,18 @@
             "3231": "【AI 伺服器基板霸主】\n緯創資通。率先卡位 NVIDIA GPU 基板 主要供應份額，毛利率受惠於 AI 高毛利產品比重拉高而大幅結構性轉型。"
         };
 
+        async function autoSyncChips(symbol, netBuy, date) {
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
+            console.log("嘗試執行自動同步...");
+            try {
+                const params = new URLSearchParams({ symbol, netBuy, date });
+                await fetch(GAS_URL + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
+                console.log("自動同步請求已送出");
+            } catch (e) {
+                console.error("自動同步失敗:", e);
+            }
+        }
+
         // 1. 初始化圖表的函數
         function initChart() {
             try {  
@@ -1017,7 +1029,11 @@ function fetchData() {
 
                 autoSyncChips(currentSymbol, data.netBuy, data.date);
             } 
-            
+            if (typeof autoSyncChips === 'function') {
+                autoSyncChips(currentSymbol, data.netBuy, data.date);
+            } else {
+                console.error("autoSyncChips 依然找不到，請檢查函式定義位置！");
+            }
             if (content && box) {
                 var rawVal = data.netBuy || "0";
                 var dateText = data.date || "";
