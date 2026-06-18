@@ -969,9 +969,9 @@ function fetchData() {
                     console.log("偵測到有效數據，執行寫入:", data.netBuy);
                     await saveToSheet(currentSymbol, data.netBuy, data.date);
                     sessionStorage.setItem(syncKey, "true");
+                    console.log("等待寫入生效...");
+                    await new Promise(resolve => setTimeout(resolve, 1500));
                 }
-            } else {
-                console.warn("當前資料為 BUSY 或無效，跳過寫入");
             }
 
             fetchDataForChart(currentSymbol);
