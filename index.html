@@ -956,30 +956,32 @@ function fetchData() {
         
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = async function(data) {
-            var isDataValid = data && data.netBuy !== "Err" && data.netBuy !== "busy" && !isNaN(parseFloat(data.netBuy));
+            if (!data) return;
+
             var currentSymbol = document.getElementById("txtSymbol").value.trim();
+            var dateText = data.date || "未知日期";
+
+            var isValid = data.netBuy && data.netBuy !== "Err" && data.netBuy !== "busy" && !isNaN(parseFloat(data.netBuy));
              
-            if (isDataValid) {
+            if (isValid) {
                 var syncKey = "sync_" + currentSymbol + "_" + data.date;
                 if (!sessionStorage.getItem(syncKey)) {
-                    console.log("偵測到新資料，開始寫入流程...");
+                    console.log("偵測到有效數據，執行寫入:", data.netBuy);
                     await saveToSheet(currentSymbol, data.netBuy, data.date);
                     sessionStorage.setItem(syncKey, "true");
-                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             } else {
-                console.warn("當前資料為 BUSY 或無效，跳過寫入，但仍嘗試讀取繪圖...");
+                console.warn("當前資料為 BUSY 或無效，跳過寫入");
             }
 
             fetchDataForChart(currentSymbol);
 
-            var contentBox = document.getElementById("institutionalContent");
-            var box = document.getElementById("institutionalBox");
+            var contentElement = document.getElementById("institutionalContent");
+            var boxElement = document.getElementById("institutionalBox");
   
-            if (content && box) {
-                var rawVal = data.netBuy;
-                var displayVal = (rawVal === "busy" || rawVal === "Err" || !rawVal) ? "資料更新中" : rawVal + " 張";
-                var dateText = data.date || "未知日期";
+            if (contentElement && boxElement) {
+                var rawVal = data.netBuy || "0";
+                var displayVal = (rawVal === "busy" || rawVal === "Err" || isNaN(parseFloat(rawVal))) ? "等待資料更新..." : rawVal + " 張";
 
                 content.innerHTML = `
                     <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
