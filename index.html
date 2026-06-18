@@ -956,16 +956,17 @@ function fetchData() {
         
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = function(data) {
-            if (!data || data.netBuy === "Err") return;
+            if (!data || data.netBuy === "Err" || data.netBuy === "busy") {
+                console.warn("資料無效，跳過寫入:", data.netBuy);
+                } else {
+                var currentSymbol = document.getElementById("txtSymbol").value.trim();
+                var syncKey = "sync_" + currentSymbol + "_" + data.date;
 
-            var currentSymbol = document.getElementById("txtSymbol").value.trim();
-            var dateText = data.date || "未知日期";
-
-            var syncKey = "sync_" + currentSymbol + "_" + dateText;
-
-            if (!sessionStorage.getItem(syncKey)) {
-                saveToSheet(currentSymbol, data.netBuy, data.date);
-                sessionStorage.setItem(syncKey, "true");
+                if (!sessionStorage.getItem(syncKey)) {
+                    console.log("嘗試執行寫入...");
+                    saveToSheet(currentSymbol, data.netBuy, data.date);
+                    sessionStorage.setItem(syncKey, "true");
+                }
             }
             fetchDataForChart(currentSymbol);
                 
