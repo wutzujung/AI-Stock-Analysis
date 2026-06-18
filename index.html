@@ -1078,6 +1078,7 @@ function fetchData() {
             let url = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
             let params = new URLSearchParams();
             params.append('symbol', symbol);
+            params.append('t', Date.now()); // 這裡加入時間戳記
 
             if (newDate && newNetBuy !== null) {
                 params.append('date', newDate);
@@ -1093,8 +1094,11 @@ function fetchData() {
                 }
                 const data = JSON.parse(text);
                
-                const validData = Array.isArray(data) ? data.filter(item => item.date && item.date.trim() !== "") : [];
-                const labels = validData.map(item => item.date);
+                const validData = Array.isArray(data) ? data.filter(item => {
+                    const cleanDate = item.date.replace(/'/g, '');
+                    return cleanDate && cleanDate.trim() !== "";
+                }) : [];
+                const labels = validData.map(item => item.date.replace(/'/g, ''));
                 const netBuyData = validData.map(item => parseFloat(item.netBuy));
 
                 if (typeof chipsChart !== 'undefined') {
