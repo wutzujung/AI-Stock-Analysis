@@ -956,17 +956,26 @@ function fetchData() {
         
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = async function(data) {
-            console.log("--- 偵測到的原始數據 ---", data);
-            if (!data) return;
 
-            var currentSymbol = document.getElementById("txtSymbol").value.trim();
+            var currentSymbol = document.getElementById("txtSymbol") ? document.getElementById("txtSymbol").value.trim() : "";
+            var dateText = "今日";
+            var netBuyVal = 0;
+            var isValid = false;
 
-            var rawVal = data.netBuy || "0";
-            var netBuyVal = parseFloat(data.netBuy);
-            var isValid = !isNaN(netBuyVal) && data.netBuy !== "Busy" && data.netBuy !== "busy" && data.netBuy !== "Err";
+            if (data) {
+                console.log("--- 偵測到的原始數據 ---", data);
+                if (data.date && data.date !== "") {
+                    dateText = data.date;
+                }
 
-            var dateText = (data.date && data.date !== "") ? data.date : "今日";
-            console.log("當前使用的日期:", dateText);
+                netBuyVal = parseFloat(data.netBuy);
+                isValid = !isNaN(netBuyVal) &&
+                        String(data.netBuy) !== "Busy" &&
+                        String(data.netBuy) !== "busy" &&
+                        String(data.netBuy) !== "Err";
+            }
+
+            console.log("數據是否有效:", isValid, "數值:", netBuyVal, "日期:", dateText);
 
             if (isValid) {
                 var syncKey = "sync_" + currentSymbol + "_" + dateText;
@@ -977,8 +986,6 @@ function fetchData() {
                     console.log("等待寫入生效...");
                     await new Promise(resolve => setTimeout(resolve, 1500));
                 }
-            } else {
-                console.warn("當前資料無效或忙碌中，跳過寫入");
             }
 
             fetchDataForChart(currentSymbol);
