@@ -956,25 +956,22 @@ function fetchData() {
         
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = async function(data) {
-            console.log("--- 偵測到的原始數據 ---", data); // <--- 加入這行檢查
 
-            if (!data) return;
+            var extractedDate = data.date;
+            if (!extractedDate || extractedDate === "") {
+                var dateElement = document.getElementById("dateDisplay");
+                extractedDate = dateElement ? dateElement.innerText.trim() : null;
+            }
 
-            var currentSymbol = document.getElementById("txtSymbol").value.trim();
-            var dateText = (data.date && data.date !== "") ? data.date : "今日";
-            var netBuyVal = parseFloat(data.netBuy);
-
-            var rawVal = data.netBuy || "0";
-            var netBuyVal = parseFloat(data.netBuy);
-            var isValid = !isNaN(netBuyVal) && data.netBuy !== "Busy" && data.netBuy !== "busy" && data.netBuy !== "Err";
+            var dateText = (extractedDate && extractedDate !== "") ? extractedDate : "今日";
 
             if (isValid) {
                 var syncKey = "sync_" + currentSymbol + "_" + dateText;
                 if (!sessionStorage.getItem(syncKey)) {
-                    console.log("偵測到有效數據，執行寫入:", netBuyVal);
+
                     await saveToSheet(currentSymbol, netBuyVal, dateText);
                     sessionStorage.setItem(syncKey, "true");
-                    console.log("等待寫入生效...");
+
                     await new Promise(resolve => setTimeout(resolve, 1500));
                 }
             } else {
