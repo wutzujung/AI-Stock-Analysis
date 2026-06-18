@@ -818,8 +818,8 @@ function fetchData() {
                 console.log("【從 GAS 抓到的原始資料筆數】:", data.length); // 這裡查看是否為 3 筆
                 console.table(data); // 這裡直接在 Console 表格化印出資料
                 const validData = Array.isArray(data) ? data.filter(item => {
-                    const cleanDate = item.date.replace(/'/g, '');
-                    return cleanDate && cleanDate.trim() !== "";
+
+                    return item && item.date !== undefined && item.date !== null;
                 }) : [];
 
                 const labels = validData.map(item => item.date.replace(/'/g, ''));
@@ -840,7 +840,7 @@ function fetchData() {
                 const getUrl = GAS_URL + "?symbol=" + symbol;
                 const res = await fetch(getUrl);
                 const data = await res.json();
-                console.log("讀取回傳資料:", data);
+                console.log("從 GAS 拿到的完整陣列:", data);
                 if (Array.isArray(data)) {
                     updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
                 }
