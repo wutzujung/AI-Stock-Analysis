@@ -793,26 +793,34 @@ function fetchData() {
     };  
         async function autoSyncChips(symbol, netBuy, date) {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec';
-            await fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ symbol: symbol, netBuy: netBuy, date: date })
+            console.log("準備發送 POST 到 GAS:", { symbol, netBuy, date });
+            const params = new URLSearchParams({
+                symbol: symbol,
+                date: date,
+                netBuy: netBuy
             });
-            const getUrl = GAS_URL + "?symbol=" + symbol;
             try {
-                const response = await fetch(getUrl);
+                const response = await fetch(GAS_URL + '?' + params.toString());
                 const data = await response.json();
-                if (data && data.length > 0) {
+
+                if (Array.isArray(data)) {
                     const labels = data.map(d => d.date);
                     const values = data.map(d => parseFloat(d.netBuy));
-                    if (typeof updateChipsChart === 'function') {
-                        updateChipsChart(labels, values);
-                    }
+                    updateChipsChart(labels, values);
                 }
             } catch (e) {
-                console.error("同步更新圖表失敗:", e);
+                console.error("自動同步失敗:", e);
             }
+ 
+            setTimeout(async () => {
+                const getUrl = GAS_URL + "?symbol=" + symbol;
+                const res = await fetch(getUrl);
+                const data = await res.json();
+                console.log("讀取回傳資料:", data);
+                if (Array.isArray(data)) {
+                    updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
+                }
+            }, 1000);
         }   
         function saveToSheet(symbol, netBuy, date) {
         // 【重要】請將下方網址替換成你部署 GAS 後得到的 Web App URL
