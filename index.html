@@ -803,10 +803,9 @@ function fetchData() {
                 const response = await fetch(GAS_URL + '?' + params.toString());
                 const data = await response.json();
 
-                if (Array.isArray(data)) {
-                    const labels = data.map(d => d.date);
-                    const values = data.map(d => parseFloat(d.netBuy));
-                    updateChipsChart(labels, values);
+                if (Array.isArray(data) && typeof updateChipsChart === 'function') {
+                    updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
+                    console.log("寫入成功，圖表已更新");
                 }
             } catch (e) {
                 console.error("自動同步失敗:", e);
@@ -1013,6 +1012,13 @@ function fetchData() {
         window.processInstitutionalResult = function(data) {
             var content = document.getElementById("institutionalContent");
             var box = document.getElementById("institutionalBox");
+            if (data && data.netBuy && data.netBuy !== "Err" && data.date) {
+                var currentSymbol = document.getElementById("txtSymbol").value.toUpperCase().split('.')[0];
+                console.log("偵測到籌碼資料，觸發自動寫入:", currentSymbol, data.netBuy, data.date);
+
+                autoSyncChips(currentSymbol, data.netBuy, data.date);
+            } 
+            
             if (content && box) {
                 var rawVal = data.netBuy || "0";
                 var dateText = data.date || "";
@@ -1022,7 +1028,8 @@ function fetchData() {
                     <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
                     <div style="margin:0; padding:0; font-size: 16px; font-weight: bold; color: ${parseInt(rawVal) >= 0 ? '#ef4444' : '#22c55e'};">${displayVal}</div>
                 `;
-            }  
+            }
+
             var box = document.getElementById("institutionalBox");
             if (box) {
             box.style.display = "block";
