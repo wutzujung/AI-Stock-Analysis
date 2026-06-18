@@ -961,9 +961,10 @@ function fetchData() {
             if (!data) return;
 
             var currentSymbol = document.getElementById("txtSymbol").value.trim();
+            var dateText = (data.date && data.date !== "") ? data.date : "今日";
             var netBuyVal = parseFloat(data.netBuy);
 
-            var isValid = (data.netBuy !== "Err" && data.netBuy !== "busy" && !isNaN(netBuyVal));
+            var isValid = !isNaN(netBuyVal) && data.netBuy !== "busy" && data.netBuy !== "Err";
             console.log("數據是否有效:", isValid, "數值:", netBuyVal); // <--- 加入這行檢查
             if (isValid) {
                 var syncKey = "sync_" + currentSymbol + "_" + data.date;
@@ -974,6 +975,8 @@ function fetchData() {
                     console.log("等待寫入生效...");
                     await new Promise(resolve => setTimeout(resolve, 1500));
                 }
+            } else {
+                console.warn("當前資料為 BUSY 或無效，跳過寫入");
             }
 
             fetchDataForChart(currentSymbol);
@@ -982,8 +985,8 @@ function fetchData() {
             var boxElement = document.getElementById("institutionalBox");
   
             if (contentElement && boxElement) {
-                var rawVal = data.netBuy || "0";
-                var displayVal = (rawVal === "busy" || rawVal === "Err" || isNaN(parseFloat(rawVal))) ? "等待資料更新..." : rawVal + " 張";
+                
+                var displayVal = isValid ? netBuyVal + " 張" : "等待資料更新...";
 
                 contentElement.innerHTML = `
                     <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
