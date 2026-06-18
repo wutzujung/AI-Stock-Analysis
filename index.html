@@ -95,6 +95,8 @@
     </style>
 
     <script type="text/javascript">
+        window.isSyncing = false;
+        window.lastSyncData = "";
         var GOOGLE_PROXY_URL = "https://script.google.com/macros/s/AKfycby00Dd0d7v39qBwmqr6wxPHsUiRp69B6v-AoBTj9XTbqytQZBU7MlZYlNdU30pw7F3G/exec"; 
         var INSTITUTIONAL_URL = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
         
@@ -118,27 +120,32 @@
         async function autoSyncChips(symbol, netBuy, date) {
 
             if (window.isSyncing) {
-                console.warn("同步程序進行中，已攔截重複請求:", symbol);
+                console.warn("系統同步中，忽略重複請求");
+                return;
+            }
+
+            const syncSignature = `${symbol}_${netBuy}_${date}`;
+            if (window.lastSyncData === syncSignature) {
+                console.warn("偵測到完全重複的資料請求，已攔截");
                 return;
             }
 
             window.isSyncing = true; // 上鎖
+            window.lastSyncData = syncSignature;
+
+            console.log("開始同步程序:", symbol, netBuy, date);
+
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
             console.log("嘗試執行自動同步...");
             try {
                 const params = new URLSearchParams({ symbol, netBuy, date, t: Date.now() }); // 加入時間戳記避免快取
                 const response = await fetch(GAS_URL + '?' + params.toString());
-                if (!response.ok) throw new Error("網路請求失敗");
+
                 const data = await response.json(); // 這是最新的 3 筆
                 console.log("同步完成，直接繪圖:", data);
 
-                if (data && data.error) {
-                    console.error("GAS 錯誤:", data.error);
-                    return;
-                }
-
                 if (Array.isArray(data)) {
-                    console.log("同步完成，直接繪圖:", data);
+                    console.log("同步完成，繪圖筆數:", data.length);
                     updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
                 }
             } catch (e) {
@@ -146,8 +153,8 @@
             } finally {
                 setTimeout(() => {
                     window.isSyncing = false;
-                    console.log("同步鎖已釋放");
-                }, 500);
+                    window.lastSyncData = ""; // 清除重複檢測，允許下一次不同的資料輸入
+                }, 1000);
             }
         }
 
