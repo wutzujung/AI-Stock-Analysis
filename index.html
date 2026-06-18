@@ -116,11 +116,14 @@
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
             console.log("嘗試執行自動同步...");
             try {
-                const params = new URLSearchParams({ symbol, netBuy, date });
-                await fetch(GAS_URL + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
-                console.log("自動同步請求已送出");
+                const params = new URLSearchParams({ symbol, netBuy, date, t: Date.now() }); // 加入時間戳記避免快取
+                const response = await fetch(GAS_URL + '?' + params.toString());
+                const result = await response.text();
+                console.log("同步完成:", result);
+                return true;
             } catch (e) {
                 console.error("自動同步失敗:", e);
+                return false;
             }
         }
 
@@ -190,13 +193,11 @@
             function updateChipsChart(labels, dataArray) {
                 if (!window.chipsChart) return;
 
-                const colors = dataArray.map(value => value >= 0 ? 'rgba(255, 99, 132, 0.6)' : 'rgba(75, 192, 192, 0.6)');
-
                 window.chipsChart.data.labels = labels;
                 window.chipsChart.data.datasets[0].data = dataArray;
-                window.chipsChart.data.datasets[0].backgroundColor = colors;
+                window.chipsChart.data.datasets[0].backgroundColor = dataArray.map(v => v >= 0 ? 'red' : 'green');
 
-                window.chipsChart.update();
+                window.chipsChart.update('none');
                 console.log("法人籌碼圖已更新，共 " + dataArray.length + " 筆數據");
             }
 
