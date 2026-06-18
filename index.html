@@ -1077,7 +1077,11 @@ function fetchData() {
 
             try {
                 const response = await fetch(url + '?' + params.toString());
-                const data = await response.json();
+                let text = await response.text();
+                if (text && text.trim().startsWith("callback(")) {
+                    text = text.substring(text.indexOf("(") + 1, text.lastIndexOf(")"));
+                }
+                const data = JSON.parse(text);
                
                 const validData = Array.isArray(data) ? data.filter(item => item.date && item.date.trim() !== "") : [];
                 const labels = validData.map(item => item.date);
