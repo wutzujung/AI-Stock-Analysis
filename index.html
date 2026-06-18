@@ -964,13 +964,15 @@ function fetchData() {
             var dateText = (data.date && data.date !== "") ? data.date : "今日";
             var netBuyVal = parseFloat(data.netBuy);
 
-            var isValid = !isNaN(netBuyVal) && data.netBuy !== "busy" && data.netBuy !== "Err";
-            console.log("數據是否有效:", isValid, "數值:", netBuyVal); // <--- 加入這行檢查
+            var rawVal = data.netBuy || "0";
+            var netBuyVal = parseFloat(data.netBuy);
+            var isValid = !isNaN(netBuyVal) && data.netBuy !== "Busy" && data.netBuy !== "busy" && data.netBuy !== "Err";
+
             if (isValid) {
-                var syncKey = "sync_" + currentSymbol + "_" + data.date;
+                var syncKey = "sync_" + currentSymbol + "_" + dateText;
                 if (!sessionStorage.getItem(syncKey)) {
-                    console.log("偵測到有效數據，執行寫入:", data.netBuy);
-                    await saveToSheet(currentSymbol, data.netBuy, data.date);
+                    console.log("偵測到有效數據，執行寫入:", netBuyVal);
+                    await saveToSheet(currentSymbol, netBuyVal, dateText);
                     sessionStorage.setItem(syncKey, "true");
                     console.log("等待寫入生效...");
                     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -985,8 +987,7 @@ function fetchData() {
             var boxElement = document.getElementById("institutionalBox");
   
             if (contentElement && boxElement) {
-                var rawVal = isValid ? netBuyVal : "Busy";
-                var displayVal = (rawVal === "Busy" || isNaN(parseFloat(rawVal))) ? "等待資料更新..." : rawVal + " 張";
+                var displayVal = (rawVal === "Busy" || rawVal === "busy" || isNaN(parseFloat(rawVal))) ? "等待資料更新..." : rawVal + " 張";
 
                 contentElement.innerHTML = `
                     <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
