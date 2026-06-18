@@ -985,8 +985,8 @@ function fetchData() {
             var boxElement = document.getElementById("institutionalBox");
   
             if (contentElement && boxElement) {
-                
-                var displayVal = isValid ? netBuyVal + " 張" : "等待資料更新...";
+                var rawVal = isValid ? netBuyVal : "Busy";
+                var displayVal = (rawVal === "Busy" || isNaN(parseFloat(rawVal))) ? "等待資料更新..." : rawVal + " 張";
 
                 contentElement.innerHTML = `
                     <div style="margin:0; padding:0; font-size: 14px; color: #334155;">外資籌碼 (${dateText})：</div>
