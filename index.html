@@ -974,14 +974,16 @@ function fetchData() {
 
         function loadInstitutionalData(symbol) {
 
-            var url = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
+            var scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec";
             fetch(scriptUrl + "?symbol=" + symbol + "&t=" + new Date().getTime(), {
                 method: "GET",
                 mode: "cors"
             })
             .then(response => response.json())
             .then(data => {
-                window.processInstitutionalResult(data.length > 0 ? data[data.length-1] : {netBuy: "0"});
+                if(data && data.length > 0) {
+                    window.processInstitutionalResult(data[data.length - 1]);
+                }
             })
             .catch(err => console.error("抓取失敗:", err));
         }
