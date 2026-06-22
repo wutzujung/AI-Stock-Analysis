@@ -1072,40 +1072,22 @@ function fetchData() {
  
         }
         async function loadStockData(symbol, newDate = null, newNetBuy = null) {
-            console.log("執行 loadStockData，寫入模式:", (newDate ? "ON" : "OFF"));
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
-            let params = new URLSearchParams();
-            params.append('symbol', symbol);
-            params.append('t', Date.now()); // 這裡加入時間戳記
+
 
             if (newDate && newNetBuy !== null) {
-                params.append('date', newDate);
-                params.append('netBuy', newNetBuy);
-                console.log("嘗試寫入:", newDate, newNetBuy);
+                console.log("偵測到新資料，執行 POST 寫入:", newDate, newNetBuy);
+                await saveToSheet(symbol, newNetBuy, newDate);
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
+            console.log("執行 GET 讀取數據...");
 
             try {
-                const response = await fetch(`${GAS_URL}?${params.toString()}`, { cache: 'no-store' });
-                let text = await response.text();
-                if (text && text.trim().startsWith("callback(")) {
-                    text = text.substring(text.indexOf("(") + 1, text.lastIndexOf(")"));
-                }
-                const data = JSON.parse(text);
-                console.log("從 GAS 獲取的資料筆數:", data.length);
-               
-                const validData = Array.isArray(data) ? data.filter(item => {
-                    const cleanDate = item && item.date ? item.date.replace(/'/g, '') : "";
-                    return cleanDate.trim() !== "";
-                }) : [];
-                const labels = validData.map(item => item.date.replace(/'/g, ''));
-                const netBuyData = validData.map(item => parseFloat(item.netBuy));
-
-                if (typeof chipsChart !== 'undefined') {
-                    chipsChart.data.labels = labels;
-                    chipsChart.data.datasets[0].data = netBuyData;
-                    chipsChart.data.datasets[0].backgroundColor = netBuyData.map(val => val >= 0 ? '#ef4444' : '#22c55e');
-                    chipsChart.update('none');
-                    console.log("籌碼圖表已更新，最終有效筆數:", labels.length);
+                const response = await fetch(`${GAS_URL}?symbol=${symbol}&t=${Date.now()}`, { cache: 'no-store' });
+                const data = await response.json();
+                
+                if (Array.isArray(data)) {
+                    updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
                 }
             } catch (err) {
                 console.error("更新籌碼圖表失敗:", err);
@@ -1124,14 +1106,14 @@ function fetchData() {
                 let dataQueue = [];
                 for (let i = 1; i < lines.length; i++) {
                     const cols = lines[i].split(',');
-                    if (cols.length >= 2) {
+                    if (cols.length >= 2 && cols[0].trim() !== "") {
                         dataQueue.push({ date: cols[0].trim(), netBuy: cols[1].trim() });
                     }
                 }
                 // 假設 CSV 格式為：日期, 買賣超 (請依據您的 CSV 實際格式調整)
                 // 跳過標題列 i=1
                 for (const item of dataQueue) {
-                    console.log("正在排隊寫入:", item.date, item.netBuy);
+                    console.log("正在排隊寫入:", item.date);
                     
                     await loadStockData(symbol, item.date, item.netBuy);
 
