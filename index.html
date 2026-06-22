@@ -789,7 +789,7 @@ function fetchData() {
         // 【重要】請將下方網址替換成你部署 GAS 後得到的 Web App URL
         var scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec"; 
     
-        return fetch(scriptUrl, {
+        fetch(scriptUrl, {
             method: "POST",
             mode: "cors", // 【修改】改為 cors
             headers: { "Content-Type": "application/json" },
@@ -799,13 +799,10 @@ function fetchData() {
                 date: date 
             })
         })
-        .then(response => {
-            if (!response.ok) throw new Error("網路請求失敗");
-            return response.json();
-        })
+        .then(res => res.json())
         .then(data => {
-            cconsole.log("成功寫入:", data);
-            setTimeout(() => { isSyncing = false; }, 2000);
+            console.log("寫入狀態:", data);
+            isSyncing = false;
         })
         .catch(err => {
             console.error("寫入失敗:", err);
@@ -978,9 +975,15 @@ function fetchData() {
         function loadInstitutionalData(symbol) {
 
             var url = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
-            var script = document.createElement('script');
-            script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
-            document.body.appendChild(script);
+            fetch(scriptUrl + "?symbol=" + symbol + "&t=" + new Date().getTime(), {
+                method: "GET",
+                mode: "cors"
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.processInstitutionalResult(data.length > 0 ? data[data.length-1] : {netBuy: "0"});
+            })
+            .catch(err => console.error("抓取失敗:", err));
         }
         
         // 這是全域函式，確保能被 JSONP 呼叫到
