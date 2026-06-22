@@ -798,12 +798,16 @@ function fetchData() {
                 netBuy: netBuy, 
                 date: date 
             })
-        }).then(response => response.json()) // 【新增】處理回應
-          .then(result => {
-            console.log("籌碼成功寫入 Sheet:", result);
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("網路請求失敗");
+            return response.json();
+        })
+        .then(data => {
+            cconsole.log("成功寫入:", data);
             setTimeout(() => { isSyncing = false; }, 2000);
         })
-          .catch(err => {
+        .catch(err => {
             console.error("寫入失敗:", err);
             isSyncing = false;
         });
