@@ -95,6 +95,30 @@
     </style>
 
     <script type="text/javascript">
+        window.processInstitutionalResult = async function(data) {
+            console.log("--- 偵測到數據流入 ---", data);
+
+            if (data && data.netBuy == "-80502") {
+                console.error("偵測到異常數值，自動拒絕處理！");
+                return;
+            }
+
+            var symbolElement = document.getElementById("txtSymbol");
+            var currentSymbol = symbolElement ? symbolElement.value.trim() : "";
+
+            var dateText = (data && data.date) ? data.date : new Date().toLocaleDateString('zh-TW', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\//g, '/');
+
+            var netBuyVal = data ? parseFloat(String(data.netBuy).replace(/,/g, '')) : 0;
+            var isValid = data && !isNaN(netBuyVal);
+
+            if (isValid && Math.abs(netBuyVal) < 500000) {
+                await saveToSheet(currentSymbol, netBuyVal, dateText);
+            }
+
+            if (typeof fetchDataForChart === 'function') {
+                fetchDataForChart(currentSymbol);
+            }
+        };
         var isSyncing = false; // 這是防止重複寫入的鎖
         window.isSyncing = false;
         window.lastSyncData = "";
