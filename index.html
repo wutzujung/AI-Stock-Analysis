@@ -693,6 +693,11 @@ function fetchData() {
                 var dateText = new Date(latestTimestamp * 1000).toLocaleDateString('zh-TW', {
                     year: 'numeric', month: '2-digit', day: '2-digit'
                 }).replace(/\//g, '/');
+                var currentNetBuy = window.lastNetBuy; // 假設這是您抓到的法人買賣超
+                if (currentNetBuy !== undefined && dateText) {
+                    console.log("偵測到數據，準備自動寫入試算表...");
+                    saveToSheet(symbolInput, currentNetBuy, dateText);
+                }
 
                 window.loadInstitutionalData(symbolInput, dateText);
 
