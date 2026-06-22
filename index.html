@@ -771,10 +771,10 @@ function fetchData() {
             var oldScript = document.getElementById('inst-script');
             if(oldScript) oldScript.remove();
 
-            //var script = document.createElement('script');
-            //script.id = 'inst-script';
-            //script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
-            //document.body.appendChild(script);
+            var script = document.createElement('script');
+            script.id = 'inst-script';
+            script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
+            document.body.appendChild(script);
         };
  
     
@@ -1076,6 +1076,12 @@ function fetchData() {
         }
         window.handleInstitutionalData = function(data) {
             console.log("=== JSONP 接收成功 ===", data);
+
+            var val = data.netBuy || 0;
+            var symbol = document.getElementById("txtSymbol").value;
+            var today = new Date().toLocaleDateString('zh-TW').replace(/\//g, '/'); // 格式化日期
+            loadStockData(symbol, today, val);
+            
             var content = document.getElementById("institutionalContent");
             var box = document.getElementById("institutionalBox");
 
