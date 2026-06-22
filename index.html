@@ -975,11 +975,13 @@ function fetchData() {
         window.processInstitutionalResult = async function(data) {
             console.log("--- 偵測到數據流入 ---");
             var target = Array.isArray(data) ? data[data.length - 1] : data;
-
             console.log("收到的日期欄位值 (target.date):", target.date);
-            if (!target.date || target.date.trim() === "") {
-                console.warn("警告：資料中沒有日期資訊，無法進入寫入流程");
+            var dateText = target.date || target.Date || target.日期 || "";
+            if (!dateText) {
+                console.warn("未偵測到日期，暫時以今日日期代替以進行測試");
+                dateText = new Date().toLocaleDateString('zh-TW', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\//g, '/');
             }
+            console.log("最終使用的日期文本:", dateText);
             if (!data) return;
 
             var target = Array.isArray(data) ? data[data.length - 1] : data;
