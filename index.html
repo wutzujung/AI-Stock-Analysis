@@ -720,6 +720,13 @@ function fetchData() {
                 }
 
                 var result = klineJson.chart.result[0];
+                var timestamps = result.timestamp; // 這是 Yahoo API 提供的正確時間戳
+                var latestTimestamp = timestamps[timestamps.length - 1]; // 最後一個交易日
+                var dateText = new Date(latestTimestamp * 1000).toLocaleDateString('zh-TW', {
+                    year: 'numeric', month: '2-digit', day: '2-digit'
+                }).replace(/\//g, '/');
+
+                window.loadInstitutionalData(symbolInput, dateText);
 
                 var quotes;
                 if (result.indicators && result.indicators.quote && result.indicators.quote[0]) {
@@ -981,18 +988,19 @@ function fetchData() {
             }
         }
 
-        function loadInstitutionalData(symbol) {
+        function loadInstitutionalData(symbol, dateFromApi) {
 
-            var scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec";
+            const scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec";
             fetch(`${scriptUrl}?symbol=${symbol}&t=${new Date().getTime()}`, {
                 method: "GET",
                 mode: "cors"
             })
             .then(res => res.json())
             .then(data => {
-                window.processInstitutionalResult(data);
-            })
-            .catch(err => console.error("抓取失敗:", err));
+                var targetData = Array.isArray(data) ? data[data.length - 1] : data;
+                targetData.date = dateFromApi;
+                window.processInstitutionalResult(targetData);
+            });
         }
         
         // 這是全域函式，確保能被 JSONP 呼叫到
