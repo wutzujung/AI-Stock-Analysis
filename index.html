@@ -95,38 +95,6 @@
     </style>
 
     <script type="text/javascript">
-        window.processInstitutionalResult = async function(data) {
-            console.log("--- 偵測到數據流入 ---", typeof data, data);
-
-            if (!data) return;
-
-            var targetData = Array.isArray(data) ? data[data.length - 1] : data;
-
-            var netBuyRaw = String(targetData.netBuy || "0").replace(/,/g, '');
-            var netBuyNum = parseFloat(netBuyRaw);
-
-            if (netBuyNum === -80502 || isNaN(netBuyNum)) {
-                console.error("偵測到異常數值 (", netBuyNum, ")，拒絕處理！");
-                return;
-            }
-            var dateText = (targetData.date && targetData.date.trim() !== "")
-            ? targetData.date
-            : new Date().toLocaleDateString('zh-TW', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\//g, '/');
-
-            console.log("數據通過驗證，準備寫入:", netBuyNum, " 日期:", dateText);
-
-
-            var symbolElement = document.getElementById("txtSymbol");
-            var currentSymbol = symbolElement ? symbolElement.value.trim() : "";
-
-            if (Math.abs(netBuyNum) < 500000) {
-                await saveToSheet(currentSymbol, netBuyNum, dateText);
-            }
-
-            if (typeof fetchDataForChart === 'function') {
-                fetchDataForChart(currentSymbol);
-            }
-        };
         var isSyncing = false; // 這是防止重複寫入的鎖
         window.isSyncing = false;
         window.lastSyncData = "";
