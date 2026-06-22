@@ -1077,21 +1077,20 @@ function fetchData() {
         window.handleInstitutionalData = function(data) {
             console.log("=== JSONP 接收成功 ===", data);
 
-            var val = data.netBuy || 0;
-            var symbol = document.getElementById("txtSymbol").value;
-            var today = new Date().toLocaleDateString('zh-TW').replace(/\//g, '/'); // 格式化日期
-            loadStockData(symbol, today, val);
-            
             var content = document.getElementById("institutionalContent");
-            var box = document.getElementById("institutionalBox");
+            var val = data.netBuy || 0;
+            if (content) content.innerHTML = "外資今日買賣超：" + val + " 張";
+            var symbol = document.getElementById("txtSymbol").value;
 
-            if (content && box) {
-                var val = data.netBuy || 0;
-                var text = (val === 0 || val === "0") ? "無買賣超" : val + " 張";
-                content.innerHTML = "外資今日買賣超：" + text;
-                box.style.display = "block";
+            var today = new Date().toLocaleDateString('zh-TW', {
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            }).replace(/\//g, '/');
+            console.log("準備同步寫入試算表 - 日期:", today, "籌碼:", data.netBuy);
+            if (val !== undefined) {
+                console.log("自動同步寫入中...", symbol, today, val);
+                loadStockData(symbol, today, val);
             }
- 
+
         }
         async function loadStockData(symbol, newDate = null, newNetBuy = null) {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
@@ -1116,36 +1115,6 @@ function fetchData() {
             } catch (err) {
                 console.error("更新籌碼圖表失敗:", err);
             }
-        }
-
-        // 1. 解析 CSV 並提取數據
-        async function processCSV(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            const symbol = document.getElementById('txtStockCode') ? document.getElementById('txtStockCode').value : "2330";
-
-            reader.onload = async function(e) {
-                const lines = e.target.result.split('\n');
-        
-                let dataQueue = [];
-                for (let i = 1; i < lines.length; i++) {
-                    const cols = lines[i].split(',');
-                    if (cols.length >= 2 && cols[0].trim() !== "") {
-                        dataQueue.push({ date: cols[0].trim(), netBuy: cols[1].trim() });
-                    }
-                }
-                // 假設 CSV 格式為：日期, 買賣超 (請依據您的 CSV 實際格式調整)
-                // 跳過標題列 i=1
-                for (const item of dataQueue) {
-                    console.log("正在排隊寫入:", item.date);
-                    
-                    await loadStockData(symbol, item.date, item.netBuy);
-
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-                alert("資料已全部寫入完成！");
-            };
-            reader.readAsText(file);
         }
     </script>
 </head>
@@ -1247,11 +1216,6 @@ function fetchData() {
                 <div class="auto-info-title color-orange">📰 最新相關新聞 (Yahoo 財經)</div>
                 <div id="newsList" style="font-size: 0.95em; line-height: 1.6; color: #334155;"></div>
             </div>
-        </div>
-
-        <div style="margin: 10px 0; text-align: center;">
-            <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="processCSV(event)">
-            <button onclick="document.getElementById('csvFile').click()" style="padding: 10px 20px;">匯入籌碼 CSV</button>
         </div>
 
         <div class="chart-container">
