@@ -767,16 +767,17 @@ function fetchData() {
     
         return fetch(scriptUrl, {
             method: "POST",
-            mode: "no-cors", 
+            mode: "cors", // 【修改】改為 cors
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 symbol: symbol, 
                 netBuy: netBuy, 
                 date: date 
             })
-        }).then(() => {
-            console.log("籌碼成功寫入 Sheet");
-            setTimeout(() => { isSyncing = false; }, 2000); // 2秒後解鎖
+        }).then(response => response.json()) // 【新增】處理回應
+          .then(result => {
+            console.log("籌碼成功寫入 Sheet:", result);
+            setTimeout(() => { isSyncing = false; }, 2000);
         })
           .catch(err => {
             console.error("寫入失敗:", err);
@@ -962,7 +963,8 @@ function fetchData() {
             var currentSymbol = document.getElementById("txtSymbol") ? document.getElementById("txtSymbol").value.trim() : "";
             var dateText = (data.date && data.date.length > 0) ? data.date : "今日";
             var rawVal = data.netBuy || "0";
-            var netBuyVal = parseFloat(data.netBuy);
+            var cleanNetBuy = String(data.netBuy).replace(/,/g, '').replace('張', '').trim();
+            var netBuyVal = parseFloat(cleanNetBuy);
             var isValid = !isNaN(netBuyVal) && String(data.netBuy).toLowerCase() !== "busy" && String(data.netBuy).toLowerCase() !== "err";
 
             if (isValid) {
