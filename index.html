@@ -701,13 +701,6 @@ function fetchData() {
 
                 window.loadInstitutionalData(symbolInput, dateText);
 
-                if (typeof currentChipData !== 'undefined' && currentChipData !== null) {
-                    console.log("偵測到籌碼數據，嘗試同步寫入:", symbolInput, dateText, currentChipData);
-                    loadStockData(symbolInput, dateText, currentChipData);
-                } else {
-                    console.warn("尚未抓到籌碼數據，僅執行讀取");
-                    loadStockData(symbolInput);
-                }
                 var quotes;
                 if (result.indicators && result.indicators.quote && result.indicators.quote[0]) {
                     quotes = result.indicators.quote[0];
@@ -741,11 +734,11 @@ function fetchData() {
                         window.priceChart.update();
                         console.log("股價圖表已更新");
                     }
-                    loadStockData(symbolInput).then(() => {
-                        console.log("籌碼資料已成功抓取並同步更新圖表");
-                    });
-                } else {
-                    console.error("資料解析後為空");
+                    //loadStockData(symbolInput).then(() => {
+                        //console.log("籌碼資料已成功抓取並同步更新圖表");
+                    //});
+                //} else {
+                    //console.error("資料解析後為空");
                 }
                 
                 // === 新增：大盤關聯邏輯開始 ===
@@ -1078,37 +1071,39 @@ function fetchData() {
             console.log("=== JSONP 接收成功 ===", data);
 
             var content = document.getElementById("institutionalContent");
-            var val = data.netBuy || 0;
-            if (content) content.innerHTML = "外資今日買賣超：" + val + " 張";
+
+            if (content) {
+                var val = data.netBuy || 0;
+                content.innerHTML = "外資今日買賣超：" + val + " 張";
+            }
             var symbol = document.getElementById("txtSymbol").value;
 
             var today = new Date().toLocaleDateString('zh-TW', {
                 year: 'numeric', month: '2-digit', day: '2-digit'
             }).replace(/\//g, '/');
             console.log("準備同步寫入試算表 - 日期:", today, "籌碼:", data.netBuy);
-            if (val !== undefined) {
-                console.log("自動同步寫入中...", symbol, today, val);
-                loadStockData(symbol, today, val);
+            if (data.netBuy !== undefined && symbol) {
+                console.log("資料已就緒，現在執行寫入:", symbol, today, data.netBuy);
+                loadStockData(symbol, today, data.netBuy);
             }
 
         }
         async function loadStockData(symbol, newDate = null, newNetBuy = null) {
-            const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
-            console.log("當前準備寫入的日期:", newDate); // 看看這裡是不是空的
+            //const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
+            //console.log("當前準備寫入的日期:", newDate); // 看看這裡是不是空的
 
-           if (newDate && newNetBuy !== null && newNetBuy !== undefined) {
-                console.log("偵測到新資料，準備呼叫 saveToSheet:", newDate, newNetBuy);
+           if (newDate && newNetBuy !== null) {
                 await saveToSheet(symbol, newNetBuy, newDate);
                 await new Promise(resolve => setTimeout(resolve, 1000));
-            } else {
-                console.log("未檢測到有效的新寫入資料，僅執行讀取...");
             }
-            console.log("執行 GET 讀取數據...");
+            await readFromSheet(symbol);
+        }
 
+        async function readFromSheet(symbol) {
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
             try {
                 const response = await fetch(`${GAS_URL}?symbol=${symbol}&t=${Date.now()}`, { cache: 'no-store' });
                 const data = await response.json();
-                
                 if (Array.isArray(data)) {
                     updateChipsChart(data.map(d => d.date), data.map(d => parseFloat(d.netBuy)));
                 }
