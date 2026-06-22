@@ -783,10 +783,10 @@ function fetchData() {
             var oldScript = document.getElementById('inst-script');
             if(oldScript) oldScript.remove();
 
-            var script = document.createElement('script');
-            script.id = 'inst-script';
-            script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
-            document.body.appendChild(script);
+            //var script = document.createElement('script');
+            //script.id = 'inst-script';
+            //script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
+            //document.body.appendChild(script);
         };
  
     
@@ -982,15 +982,13 @@ function fetchData() {
         function loadInstitutionalData(symbol) {
 
             var scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec";
-            fetch(scriptUrl + "?symbol=" + symbol + "&t=" + new Date().getTime(), {
+            fetch(`${scriptUrl}?symbol=${symbol}&t=${new Date().getTime()}`, {
                 method: "GET",
                 mode: "cors"
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
-                if(data && data.length > 0) {
-                    window.processInstitutionalResult(data[data.length - 1]);
-                }
+                window.processInstitutionalResult(data);
             })
             .catch(err => console.error("抓取失敗:", err));
         }
