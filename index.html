@@ -1113,30 +1113,31 @@ function fetchData() {
         }
 
         // 1. 解析 CSV 並提取數據
-        function processCSV(event) {
+        async function processCSV(event) {
             const file = event.target.files[0];
             const reader = new FileReader();
-            const symbol = document.getElementById('txtStockCode') ? document.getElementById('txtStockCode').value : "2330"; // 請確認您的代號欄位ID
+            const symbol = document.getElementById('txtStockCode') ? document.getElementById('txtStockCode').value : "2330";
 
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.split('\n');
+            reader.onload = async function(e) {
+                const lines = e.target.result.split('\n');
         
-                // 假設 CSV 格式為：日期, 買賣超 (請依據您的 CSV 實際格式調整)
-                // 跳過標題列 i=1
+                let dataQueue = [];
                 for (let i = 1; i < lines.length; i++) {
                     const cols = lines[i].split(',');
                     if (cols.length >= 2) {
-                        const date = cols[0].trim();
-                        const netBuy = cols[1].trim();
-                
-                        // 找到一筆就呼叫寫入函式
-                        if (date && netBuy) {
-                            console.log("偵測到 CSV 資料:", date, netBuy);
-                            loadStockData(symbol, date, netBuy);
-                        }
+                        dataQueue.push({ date: cols[0].trim(), netBuy: cols[1].trim() });
                     }
                 }
+                // 假設 CSV 格式為：日期, 買賣超 (請依據您的 CSV 實際格式調整)
+                // 跳過標題列 i=1
+                for (const item of dataQueue) {
+                    console.log("正在排隊寫入:", item.date, item.netBuy);
+                    
+                    await loadStockData(symbol, item.date, item.netBuy);
+
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                alert("資料已全部寫入完成！");
             };
             reader.readAsText(file);
         }
