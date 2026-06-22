@@ -974,24 +974,35 @@ function fetchData() {
         // 這是全域函式，確保能被 JSONP 呼叫到
         window.processInstitutionalResult = async function(data) {
             if (!data) return;
-            console.log("處理籌碼資料:", data);
+
+            var target = Array.isArray(data) ? data[data.length - 1] : data;
+            console.log("處理籌碼資料:", target);
 
             var currentSymbol = document.getElementById("txtSymbol") ? document.getElementById("txtSymbol").value.trim() : "";
-            var dateText = (data.date && data.date.length > 0) ? data.date : "今日";
-            var rawVal = data.netBuy || "0";
-            var cleanNetBuy = String(data.netBuy).replace(/,/g, '').replace('張', '').trim();
+            var dateText = (target.date && target.date.trim() !== "") ? target.date : "未知日期";
+            if (dateText === "未知日期" && typeof globalValidData !== 'undefined' && globalValidData.length > 0) {
+                dateText = globalValidData[globalValidData.length - 1].date;
+            }
+
+            var cleanNetBuy = String(target.netBuy || "0").replace(/,/g, '').replace('張', '').trim();
             var netBuyVal = parseFloat(cleanNetBuy);
             var isValid = !isNaN(netBuyVal) && String(data.netBuy).toLowerCase() !== "busy" && String(data.netBuy).toLowerCase() !== "err";
+
+            var isValid = !isNaN(netBuyVal) &&
+                          String(target.netBuy).toLowerCase() !== "busy" &&
+                          String(target.netBuy).toLowerCase() !== "err" &&
+                          netBuyVal !== -80502;
 
             if (isValid) {
                 var syncKey = "sync_" + currentSymbol + "_" + dateText;
                 if (!sessionStorage.getItem(syncKey)) {
-                    console.log("偵測到有效數據，寫入試算表:", netBuyVal);
+                    console.log("偵測到有效數據，準備寫入:", netBuyVal, "日期:", dateText);
                     await saveToSheet(currentSymbol, netBuyVal, dateText);
                     sessionStorage.setItem(syncKey, "true");
-                    console.log("等待寫入生效...");
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
+            } else {
+                console.warn("數據無效，跳過寫入:", target.netBuy);
             }
 
             fetchDataForChart(currentSymbol);
