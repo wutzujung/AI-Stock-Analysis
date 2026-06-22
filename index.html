@@ -976,9 +976,9 @@ function fetchData() {
             console.log("--- 偵測到數據流入 ---");
             var target = Array.isArray(data) ? data[data.length - 1] : data;
 
-            console.log("物件結構:", JSON.stringify(target));
-            for (var key in target) {
-                console.log("發現屬性鍵值:", key, "對應數值:", target[key]);
+            console.log("收到的日期欄位值 (target.date):", target.date);
+            if (!target.date || target.date.trim() === "") {
+                console.warn("警告：資料中沒有日期資訊，無法進入寫入流程");
             }
             if (!data) return;
 
