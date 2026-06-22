@@ -701,6 +701,13 @@ function fetchData() {
 
                 window.loadInstitutionalData(symbolInput, dateText);
 
+                if (typeof currentChipData !== 'undefined' && currentChipData !== null) {
+                    console.log("偵測到籌碼數據，嘗試同步寫入:", symbolInput, dateText, currentChipData);
+                    loadStockData(symbolInput, dateText, currentChipData);
+                } else {
+                    console.warn("尚未抓到籌碼數據，僅執行讀取");
+                    loadStockData(symbolInput);
+                }
                 var quotes;
                 if (result.indicators && result.indicators.quote && result.indicators.quote[0]) {
                     quotes = result.indicators.quote[0];
@@ -777,6 +784,10 @@ function fetchData() {
             isSyncing = true;
         // 【重要】請將下方網址替換成你部署 GAS 後得到的 Web App URL
         var scriptUrl = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec"; 
+        if (!date) {
+            console.error("寫入中斷：日期參數為空！");
+            return;
+        }
     
         fetch(scriptUrl, {
             method: "POST",
@@ -1078,12 +1089,14 @@ function fetchData() {
         }
         async function loadStockData(symbol, newDate = null, newNetBuy = null) {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
+            console.log("當前準備寫入的日期:", newDate); // 看看這裡是不是空的
 
-
-            if (newDate && newNetBuy !== null) {
-                console.log("偵測到新資料，執行 POST 寫入:", newDate, newNetBuy);
+           if (newDate && newNetBuy !== null && newNetBuy !== undefined) {
+                console.log("偵測到新資料，準備呼叫 saveToSheet:", newDate, newNetBuy);
                 await saveToSheet(symbol, newNetBuy, newDate);
                 await new Promise(resolve => setTimeout(resolve, 1000));
+            } else {
+                console.log("未檢測到有效的新寫入資料，僅執行讀取...");
             }
             console.log("執行 GET 讀取數據...");
 
