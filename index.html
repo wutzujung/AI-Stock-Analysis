@@ -792,6 +792,7 @@ function fetchData() {
  
     
         function saveToSheet(symbol, netBuy, date) {
+            console.log("準備發送給 GAS 的數據:", { symbol, netBuy, date });
             if (isSyncing) return;
             isSyncing = true;
         // 【重要】請將下方網址替換成你部署 GAS 後得到的 Web App URL
