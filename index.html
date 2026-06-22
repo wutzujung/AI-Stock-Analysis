@@ -754,7 +754,7 @@ function fetchData() {
         }
         window.loadInstitutionalData = function(symbol) {
             console.log("觸發籌碼抓取: " + symbol);
-            var url = "https://script.google.com/macros/s/AKfycby10SHcNniyi7yhnyQRONoOOUKnc3p6ENR_Of6E7nQyVFu7RO4HpmONP0E9eMFIqB9ynw/exec";
+            var url = "https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec";
 
             var oldScript = document.getElementById('inst-script');
             if(oldScript) oldScript.remove();
@@ -767,7 +767,7 @@ function fetchData() {
  
     
         function saveToSheet(symbol, netBuy, date) {
-            console.log("準備發送給 GAS 的數據:", { symbol, netBuy, date });
+            console.log("!!! 正在呼叫 saveToSheet !!! 參數:", { symbol, netBuy, date });
             if (isSyncing) return;
             isSyncing = true;
         // 【重要】請將下方網址替換成你部署 GAS 後得到的 Web App URL
