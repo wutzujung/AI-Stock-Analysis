@@ -1067,7 +1067,7 @@ function fetchData() {
                 console.error("抓取失敗:", e);
             }
         }
-        window.handleInstitutionalData = function(data) {
+        window.handleInstitutionalData = function(data, symbolInput) {
             console.log("=== JSONP 接收成功 ===", data);
 
             var content = document.getElementById("institutionalContent");
@@ -1081,8 +1081,8 @@ function fetchData() {
             var today = new Date().toLocaleDateString('zh-TW', {
                 year: 'numeric', month: '2-digit', day: '2-digit'
             }).replace(/\//g, '/');
-            console.log("準備同步寫入試算表 - 日期:", today, "籌碼:", data.netBuy);
-            if (data.netBuy !== undefined && symbol) {
+
+            if (data.netBuy !== undefined && data.netBuy !== null && symbol) {
                 console.log("資料已就緒，現在執行寫入:", symbol, today, data.netBuy);
                 loadStockData(symbol, today, data.netBuy);
             }
