@@ -766,7 +766,7 @@ function fetchData() {
 
             var script = document.createElement('script');
             script.id = 'inst-script';
-            script.src = url + "?symbol=" + symbol + "&callback=window.processInstitutionalResult&t=" + new Date().getTime();
+            script.src = url + "?symbol=" + symbol + "&callback=handleInstitutionalData&t=" + new Date().getTime();
             document.body.appendChild(script);
         };
  
@@ -1067,26 +1067,31 @@ function fetchData() {
                 console.error("抓取失敗:", e);
             }
         }
-        window.handleInstitutionalData = function(data, symbolInput) {
+        window.handleInstitutionalData = function(data) {
             console.log("=== JSONP 接收成功 ===", data);
+
+            if (!data || data.netBuy === undefined) {
+                console.error("錯誤：API 回傳資料格式異常", data);
+                return;
+            }
 
             var content = document.getElementById("institutionalContent");
 
             if (content) {
-                var val = data.netBuy || 0;
-                content.innerHTML = "外資今日買賣超：" + val + " 張";
+                content.innerHTML = "外資今日買賣超：" + data.netBuy + " 張";
             }
+
             var symbol = document.getElementById("txtSymbol").value;
+            var d = new Date();
+            var today = d.getFullYear() + '/' +
+                        String(d.getMonth() + 1).padStart(2, '0') + '/' +
+                        String(d.getDate()).padStart(2, '0');
 
-            var today = new Date().toLocaleDateString('zh-TW', {
-                year: 'numeric', month: '2-digit', day: '2-digit'
-            }).replace(/\//g, '/');
+            console.log("DEBUG: 即將觸發 loadStockData", { 股票代號: symbol, 日期: today, 買賣超: data.netBuy });
 
-            if (data.netBuy !== undefined && data.netBuy !== null && symbol) {
-                console.log("資料已就緒，現在執行寫入:", symbol, today, data.netBuy);
+            if (symbol && today && data.netBuy !== undefined) {
                 loadStockData(symbol, today, data.netBuy);
             }
-
         }
         async function loadStockData(symbol, newDate = null, newNetBuy = null) {
             //const GAS_URL = 'https://script.google.com/macros/s/AKfycbzghfVw1UF3cVid3aF_YicYUCJodZoSFrAtW5FvV0rMOxkHHsQVWVEtz_h6FQ7bdlOl/exec';
